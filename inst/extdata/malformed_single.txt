@@ -1,0 +1,25 @@
+#mpa_vJun23_CHOCOPhlAnSGB_202307
+#/shares/CIBIO-Storage/CM/scratch/tools/20231211_2023.09_anaconda3/envs/metaphlan-4.1/bin/metaphlan SRS014476-Supragingival_plaque.fasta.gz --input_type fasta --nproc 4 --index mpa_vJun23_CHOCOPhlAnSGB_202307
+#19048 reads processed
+#SampleID	Metaphlan_Analysis
+#clade_name	NCBI_tax_id	relative_abundance
+k__Bacteria	2	100.0
+k__Bacteria|p__Actinobacteria	2|201174	85.43048
+k__Bacteria|p__Firmicutes	2|1239	14.56952
+k__Bacteria|p__Actinobacteria|c__Actinomycetia	2|201174|1760	85.43048
+k__Bacteria|p__Firmicutes|c__Bacilli	2|1239|91061	14.56952
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Corynebacteriales	2|201174|1760|85007	53.75141
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Micrococcales	2|201174|1760|85006	31.67907
+k__Bacteria|p__Firmicutes|c__Bacilli|o__Lactobacillales	2|1239|91061|186826	14.56952
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Corynebacteriales|f__Corynebacteriaceae	2|201174|1760|85007|1653	53.75141
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Micrococcales|f__Micrococcaceae	2|201174|1760|85006|1268	31.67907
+k__Bacteria|p__Firmicutes|c__Bacilli|o__Lactobacillales|f__Streptococcaceae	2|1239|91061|186826|1300	14.56952
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Corynebacteriales|f__Corynebacteriaceae|g__Corynebacterium	2|201174|1760|85007|1653|1716	53.75141
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Micrococcales|f__Micrococcaceae|g__Rothia	2|201174|1760|85006|1268|32207	31.67907
+k__Bacteria|p__Firmicutes|c__Bacilli|o__Lactobacillales|f__Streptococcaceae|g__Streptococcus	2|1239|91061|186826|1300|1301	14.56952
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Corynebacteriales|f__Corynebacteriaceae|g__Corynebacterium|s__Corynebacterium_matruchotii	2|201174|1760|85007|1653|1716|43768	53.75141
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Micrococcales|f__Micrococcaceae|g__Rothia|s__Rothia_SGB49305	2|201174|1760|85006|1268|32207|	31.67907
+k__Bacteria|p__Firmicutes|c__Bacilli|o__Lactobacillales|f__Streptococcaceae|g__Streptococcus|s__Streptococcus_sanguinis	2|1239|91061|186826|1300|1301|1305	14.56952
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Corynebacteriales|f__Corynebacteriaceae|g__Corynebacterium|s__Corynebacterium_matruchotii|t__SGB17007	2|201174|1760|85007|1653|1716|43768|	53.75141
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Micrococcales|f__Micrococcaceae|g__Rothia|s__Rothia_SGB49305|t__SGB49305_group	2|201174|1760|85006|1268|32207||	31.67907
+k__Bacteria|p__Firmicutes|c__Bacilli|o__Lactobacillales|f__Streptococcaceae|g__Streptococcus|s__Streptococcus_sanguinis|t__SGB8047_group	2|1239|91061|186826|1300|1301|1305|	14.56952

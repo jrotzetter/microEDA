@@ -1,0 +1,5 @@
+"Column_1"	"Column_2"	"Column_3"
+"1"	12	TRUE	"Hello"
+"2"	34	FALSE	"World"
+"3"	7	TRUE	""
+"4"	NA	NA	NA

@@ -1,0 +1,9 @@
+clade_name	SRS014459-Stool	SRS014464-Anterior_nares	SRS014470-Tongue_dorsum	SRS014472-Buccal_mucosa	SRS014476-Supragingival_plaque	SRS014494-Posterior_fornix
+UNCLASSIFIED	100.0	0.0	0.0	0.0	0.0	0.0
+k__Bacteria	0.0	100.0	100.0	100.0	100.0	100.0
+k__Bacteria|p__Proteobacteria	0.0	81.20128	0.0	14.7449	0.0	0.0
+k__Bacteria|p__Actinobacteria	0.0	18.79872	0.0	0.0	85.43048	0.0
+k__Bacteria|p__Proteobacteria|c__Gammaproteobacteria	0.0	81.20128	0.0	14.7449	0.0	0.0
+k__Bacteria|p__Actinobacteria|c__Actinomycetia	0.0	18.79872	0.0	0.0	85.43048	0.0
+k__Bacteria|p__Proteobacteria|c__Gammaproteobacteria|o__Moraxellales	0.0	81.20128	0.0	0.0	0.0	0.0
+k__Bacteria|p__Actinobacteria|c__Actinomycetia|o__Corynebacteriales	0.0	18.79872	0.0	0.0	53.75141	0.0
