@@ -1,0 +1,6 @@
+^renv$
+^renv\.lock$
+^microEDA\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^data-raw$
