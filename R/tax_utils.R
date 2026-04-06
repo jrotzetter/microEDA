@@ -18,6 +18,7 @@
 #' @param x A `character` vector containing taxonomic strings with rank prefixes.
 #' @return A `character` vector with rank prefixes removed.
 #' @keywords internal
+#' @noRd
 .trim_rank_prefix <- function(x) {
   pattern <- paste(.tax_ranks, collapse = "")
   pattern <- paste0("^[", pattern, "]__")
@@ -37,6 +38,7 @@
 #'   which prefixes should be added.
 #' @return The input `tax_table` with rank prefixes added to the specified columns.
 #' @keywords internal
+#' @noRd
 .add_rank_prefix <- function(tax_table, cols) {
   for (tax_rank in cols) {
     prefix <- .tax_ranks[tax_rank]
