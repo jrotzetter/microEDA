@@ -5,6 +5,7 @@
 #' @keywords internal
 #' @noRd
 .check_if_int <- function(tax_profile) {
+  if (!all(vapply(tax_profile, is.numeric, logical(1L)))) stop("Non-numeric columns detected.")
   all(vapply(tax_profile, function(col) {
     all(col == as.integer(col), na.rm = TRUE)
   }, logical(1L)))
