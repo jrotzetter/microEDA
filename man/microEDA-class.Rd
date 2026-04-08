@@ -8,18 +8,19 @@
 \alias{microEDA,phyloseq-method}
 \title{An S4 class extending phyloseq for microbiome data analysis}
 \usage{
-microEDA(tax_profile, metadata = NULL, sample_names_col = NULL)
+microEDA(tax_profile, metadata = NULL, sample_column = NULL)
 
-\S4method{microEDA}{metaphlanProfile}(tax_profile, metadata = NULL, sample_names_col = NULL)
+\S4method{microEDA}{metaphlanProfile}(tax_profile, metadata = NULL, sample_column = NULL)
 
-\S4method{microEDA}{phyloseq}(tax_profile, metadata = NULL, sample_names_col = NULL)
+\S4method{microEDA}{phyloseq}(tax_profile, metadata = NULL, sample_column = NULL)
 }
 \arguments{
 \item{tax_profile}{An object of class "metaphlanProfile" or "phyloseq".}
 
 \item{metadata}{Optional data.frame with sample metadata.}
 
-\item{sample_names_col}{Column name to use as sample identifiers.}
+\item{sample_column}{\code{Character} string specifying the column name in
+\code{metadata} that contains sample identifiers (e.g., "Samples").}
 }
 \value{
 An object of class \code{microEDA}.
