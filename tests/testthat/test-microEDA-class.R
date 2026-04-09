@@ -83,14 +83,25 @@ test_that("throw error with metaphlanProfile object when only one taxonomic rank
 ### phyloseq ///////////////////////////////////////////////////////////////////
 
 # Helper: Create simple mock phyloseq object
-mock_phyloseq <- function() {
-  otu <- phyloseq::otu_table(
-    matrix(sample(1:100, 20, replace = TRUE),
-      nrow = 4,
-      dimnames = list(paste0("OTU_", 1:4), paste0("Sample_", 1:5))
-    ),
-    taxa_are_rows = TRUE
-  )
+mock_phyloseq <- function(taxa_are_rows = TRUE) {
+  if (taxa_are_rows) {
+    otu <- phyloseq::otu_table(
+      matrix(sample(1:100, 20, replace = TRUE),
+        nrow = 4,
+        dimnames = list(paste0("OTU_", 1:4), paste0("Sample_", 1:5))
+      ),
+      taxa_are_rows = TRUE
+    )
+  } else {
+    otu <- phyloseq::otu_table(
+      t(matrix(sample(1:100, 20, replace = TRUE),
+        nrow = 4,
+        dimnames = list(paste0("OTU_", 1:4), paste0("Sample_", 1:5))
+      )),
+      taxa_are_rows = FALSE
+    )
+  }
+
   sam <- phyloseq::sample_data(
     data.frame(
       sample_names = paste0("Sample_", 1:5),
@@ -132,6 +143,33 @@ test_that("microEDA can be constructed from phyloseq object", {
   # expect_s3_class(phyloseq::phy_tree(me), "phylo")
   expect_error(phyloseq::phy_tree(me), "phy_tree slot is empty.")
   expect_equal(phyloseq::phy_tree(me, errorIfNULL = FALSE), NULL)
+})
+
+
+test_that("microEDA can be constructed from phyloseq object where taxa_are_rows = FALSE", {
+  ps <- mock_phyloseq(taxa_are_rows = FALSE)
+  expect_equal(phyloseq::taxa_are_rows(ps), FALSE)
+
+  me <- microEDA(ps)
+  expect_equal(phyloseq::taxa_are_rows(ps), FALSE)
+  expect_equal(phyloseq::taxa_are_rows(me), TRUE)
+
+  # Check class inheritance
+  expect_s4_class(me, "microEDA")
+  expect_s4_class(me, "phyloseq")
+
+  # Check for the presence of 'info' slot
+  expect_true("info" %in% slotNames(me))
+  expect_type(slot(me, "info"), "list")
+
+  # Check that all phyloseq components are preserved
+  expect_s4_class(phyloseq::otu_table(me), "otu_table")
+  expect_s4_class(phyloseq::tax_table(me), "taxonomyTable")
+  expect_s4_class(phyloseq::sample_data(me), "sample_data")
+  # expect_s3_class(phyloseq::phy_tree(me), "phylo")
+  expect_error(phyloseq::phy_tree(me), "phy_tree slot is empty.")
+  expect_equal(phyloseq::phy_tree(me, errorIfNULL = FALSE), NULL)
+
 })
 
 

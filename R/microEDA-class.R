@@ -289,13 +289,18 @@ setMethod("checkProfileRank", "microEDA", function(object) {
   stopifnot(inherits(tax_profile, "phyloseq"))
 
   abund_table <- phyloseq::otu_table(tax_profile)
-  if (any(abund_table < 0, na.rm = TRUE)) .show_error("OTU table contains negative values.")
   tax_table <- tax_profile@tax_table
+
+  # Ensure abundance table is in expected orientation
+  if (!phyloseq::taxa_are_rows(abund_table)) {
+    abund_table <- phyloseq::t(abund_table)
+  }
+
+  if (any(abund_table < 0, na.rm = TRUE)) .show_error("OTU table contains negative values.")
 
   if (is.null(tax_table)) .show_error('The "tax_table" slot must not be empty for "phyloseq" objects.')
 
   if (!is.null(sample_column) && is.null(metadata)) .show_error('"metadata" must be provided when "sample_column" is specified to add metadata.')
-
 
   # If metadata is provided, use sample_column to set row names
   if (!is.null(metadata)) {
