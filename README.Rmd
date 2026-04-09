@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![GitHub Release](https://img.shields.io/github/release/jrotzetter/microEDA?include_prereleases=&sort=semver&color=blue)](https://github.com/jrotzetter/microEDA/releases/ "View releases")
-[![License](https://img.shields.io/badge/License-MIT-blue)](#license "View license summary")
+[![License](https://img.shields.io/badge/License-GPLv3-blue)](#license "View license summary")
 [![Issues - microEDA](https://img.shields.io/github/issues/jrotzetter/microEDA)](https://github.com/jrotzetter/microEDA/issues "View open issues")
 [![Made with R](https://img.shields.io/badge/R-4.5.3-blue?logo=r&logoColor=white)](https://cran.r-project.org/ "Go to CRAN homepage")
 [![Made with R](https://img.shields.io/badge/RStudio-2026.01.1_Build_403-blue?logo=rstudio&logoColor=white)](https://posit.co/products/open-source/rstudio/ "Go to RSTUDIO IDE homepage")

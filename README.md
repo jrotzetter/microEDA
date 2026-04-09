@@ -7,7 +7,7 @@
 
 [![GitHub
 Release](https://img.shields.io/github/release/jrotzetter/microEDA?include_prereleases=&sort=semver&color=blue)](https://github.com/jrotzetter/microEDA/releases/ "View releases")
-[![License](https://img.shields.io/badge/License-MIT-blue)](#license "View license summary")
+[![License](https://img.shields.io/badge/License-GPLv3-blue)](#license "View license summary")
 [![Issues -
 microEDA](https://img.shields.io/github/issues/jrotzetter/microEDA)](https://github.com/jrotzetter/microEDA/issues "View open issues")
 [![Made with
