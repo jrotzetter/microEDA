@@ -14,6 +14,80 @@ setClass("metaphlanProfile",
 )
 
 
+#' Get or set the MetaPhlAn database version
+#'
+#' @param object An object of class `metaphlanProfile`.
+#' @param value A `character` string with a new MetaPhlAn database version (used only in assignment).
+#' @return The recorded MetaPhlAn database version (when getting), or updated `metaphlanProfile` (when setting).
+#' @rdname mpa_version
+#' @aliases mpa_version,metaphlanProfile-method
+#' @docType methods
+#' @export
+#' @usage mpa_version(object)
+setGeneric("mpa_version", function(object) standardGeneric("mpa_version"))
+
+# Getter method
+setMethod("mpa_version", "metaphlanProfile", function(object) object@mpa_version)
+
+# Replacement method (setter)
+#' @rdname mpa_version
+#' @aliases mpa_version<-,metaphlanProfile-method
+#' @usage mpa_version(object) <- value
+setGeneric("mpa_version<-", function(object, value) standardGeneric("mpa_version<-"))
+
+setMethod("mpa_version<-", "metaphlanProfile", function(object, value) {
+  if (!is.character(value) || length(value) != 1) {
+    stop("'value' must be a single character string.")
+  }
+  object@mpa_version <- value
+  return(object)
+})
+
+
+#' Get or set the MetaPhlAn taxonomic profile
+#'
+#' @param object An object of class `metaphlanProfile`.
+#' @param value A `data.frame` with a MetaPhlAn taxonomic profile.
+#' @return The taxonomic profile (when getting), or updated `metaphlanProfile` (when setting).
+#' @rdname mpa_taxProfile
+#' @aliases mpa_taxProfile,metaphlanProfile-method
+#' @docType methods
+#' @export
+#' @usage mpa_taxProfile(object)
+setGeneric("mpa_taxProfile", function(object) standardGeneric("mpa_taxProfile"))
+
+# Getter method
+setMethod(
+  "mpa_taxProfile", "metaphlanProfile",
+  function(object) {
+    return(object@mpa_taxProfile)
+  }
+)
+
+# Replacement method (setter)
+#' @rdname mpa_taxProfile
+#' @aliases mpa_taxProfile<-,metaphlanProfile-method
+#' @usage mpa_taxProfile(object) <- value
+setGeneric("mpa_taxProfile<-", function(object, value) standardGeneric("mpa_taxProfile<-"))
+
+setMethod(
+  "mpa_taxProfile<-", "metaphlanProfile",
+  function(object, value) {
+    if (!is.data.frame(value)) {
+      stop("'value' must be a data.frame.")
+    }
+    if (!"clade_name" %in% colnames(value)) {
+      stop("Column 'clade_name' not found in profile. Taxonomic hierarchy cannot be established.")
+    }
+    if (!.is_proportion(value)) {
+      stop("Profile may not contain relative abundances.")
+    }
+    object@mpa_taxProfile <- value
+    return(object)
+  }
+)
+
+
 #' Load MetaPhlAn profile
 #'
 #' @description
