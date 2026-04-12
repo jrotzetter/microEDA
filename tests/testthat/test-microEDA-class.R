@@ -169,7 +169,6 @@ test_that("microEDA can be constructed from phyloseq object where taxa_are_rows 
   # expect_s3_class(phyloseq::phy_tree(me), "phylo")
   expect_error(phyloseq::phy_tree(me), "phy_tree slot is empty.")
   expect_equal(phyloseq::phy_tree(me, errorIfNULL = FALSE), NULL)
-
 })
 
 

@@ -85,7 +85,7 @@ setMethod("checkProfileRank", "microEDA", function(object) {
 
   if (any(abund_table < 0, na.rm = TRUE)) .show_error("OTU table contains negative values.")
 
-  if (.check_if_int(abund_table)) {
+  if (!.is_proportion(abund_table)) {
     transforms <- NULL
   } else {
     transforms <- "relabund"
@@ -335,7 +335,7 @@ setMethod("checkProfileRank", "microEDA", function(object) {
   # Make sure no reserved column names are in the metadata
   metadata <- .check_var_names(metadata)
 
-  if (.check_if_int(abund_table)) {
+  if (!.is_proportion(abund_table, silent = TRUE)) {
     transforms <- NULL
   } else {
     transforms <- "relabund"
