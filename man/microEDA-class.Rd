@@ -6,7 +6,7 @@
 \alias{microEDA}
 \alias{microEDA,metaphlanProfile-method}
 \alias{microEDA,phyloseq-method}
-\title{An S4 class extending phyloseq for microbiome data analysis}
+\title{A S4 class extending phyloseq for microbiome data analysis}
 \usage{
 microEDA(tax_profile, metadata = NULL, sample_column = NULL)
 

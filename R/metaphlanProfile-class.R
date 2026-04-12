@@ -24,6 +24,7 @@ setClass("metaphlanProfile",
 #' @docType methods
 #' @export
 #' @usage mpa_version(object)
+#' @seealso \code{\link{mpa_version,microEDA-method}}
 setGeneric("mpa_version", function(object) standardGeneric("mpa_version"))
 
 # Getter method

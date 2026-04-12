@@ -1,4 +1,4 @@
-#' An S4 class extending phyloseq for microbiome data analysis
+#' A S4 class extending phyloseq for microbiome data analysis
 #'
 #' This class inherits from phyloseq and adds a slot for additional information,
 #' such as lowest taxonomic rank, MetaPhlAn database version, applied
@@ -13,18 +13,136 @@ setClass("microEDA",
 )
 
 
-#' Check taxonomic rank of the profile
+#' Get or set the info slot from a microEDA object
 #'
-#' @param object An object of class \code{microEDA}.
-#' @return The taxonomic rank stored in the \code{info} slot.
-#' @rdname checkProfileRank-methods
+#' @description
+#' Accessor methods for either retrieving or setting the info slot in a `microEDA` object.
+#' Additionally, each expected element of the info slot can be retrieved or set
+#' individually.
+#'
+#' @param object A \linkS4class{microEDA} object.
+#' @param value For `info<-`: A `list` containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.
+#'
+#'  For `taxrank<-`: A `character` string specifying the taxonomic rank (e.g., "Species", "Genus").
+#'
+#'  For `transforms<-`: A `character` vector of applied transformation(s) (e.g., c("TSS", "log2")).
+#'
+#'  For `filters<-`: A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).
+#'
+#'  For `mpa_version<-`: A `character` string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").
+#' @return For `info()`: A `list` containing metadata. For `info<-`: updated `microEDA` object.
+#' @details
+#' `taxrank`: represents the lowest available taxonomic rank.
+#'
+#' `transforms`: represents transformation(s) that were applied to the abundance data (otu_table).
+#'
+#' `filters`: represents filters that were applied to the abundance data (otu_table).
+#'
+#' `mpa_version`: represents the MetaPhlAn database version that was used to create the profile.
+#'
+#' @rdname info-accessors
+#' @aliases info,microEDA-method
 #' @docType methods
-#' @exportMethod checkProfileRank
-setGeneric("checkProfileRank", function(object) standardGeneric("checkProfileRank"))
-#' @rdname checkProfileRank-methods
-#' @aliases checkProfileRank,microEDA-method
-setMethod("checkProfileRank", "microEDA", function(object) {
-  object@info$taxrank
+#' @export
+setGeneric("info", function(object) standardGeneric("info"))
+
+setMethod(
+  "info", "microEDA",
+  function(object) {
+    return(object@info)
+  }
+)
+
+
+#' @rdname info-accessors
+#' @aliases info<-,microEDA-method
+#' @export
+setGeneric("info<-", function(object, value) standardGeneric("info<-"))
+
+setMethod("info<-", "microEDA", function(object, value) {
+  valid_keys <- c("taxrank", "transforms", "filters", "mpa_version")
+  if (!is.list(value)) stop("'info' must be a named list.")
+
+  if (any(!names(value) %in% valid_keys)) {
+    invalid <- names(value)[!names(value) %in% valid_keys]
+    warning(
+      "Unknown metadata added to 'info': ", paste(invalid, collapse = ", "),
+      ". Expected keys are: ", paste(valid_keys, collapse = ", ")
+    )
+  }
+  object@info <- value
+  return(object)
+})
+
+
+#' @return For `taxrank()`: `character` string. For `taxrank<-`: updated `microEDA` object.
+#' @rdname info-accessors
+#' @aliases taxrank,microEDA-method
+#' @export
+setGeneric("taxrank", function(object) standardGeneric("taxrank"))
+setMethod("taxrank", "microEDA", function(object) object@info[["taxrank"]])
+
+#' @rdname info-accessors
+#' @aliases taxrank<-,microEDA-method
+#' @export
+setGeneric("taxrank<-", function(object, value) standardGeneric("taxrank<-"))
+setMethod("taxrank<-", "microEDA", function(object, value) {
+  object@info[["taxrank"]] <- value
+  validObject(object)
+  object
+})
+
+
+#' @return For `transforms()`: `character` vector. For `transforms<-`: updated `microEDA` object.
+#' @rdname info-accessors
+#' @aliases transforms,microEDA-method
+#' @export
+setGeneric("transforms", function(object) standardGeneric("transforms"))
+setMethod("transforms", "microEDA", function(object) object@info[["transforms"]])
+
+#' @rdname info-accessors
+#' @aliases transforms<-,microEDA-method
+#' @export
+setGeneric("transforms<-", function(object, value) standardGeneric("transforms<-"))
+setMethod("transforms<-", "microEDA", function(object, value) {
+  object@info[["transforms"]] <- value
+  validObject(object)
+  object
+})
+
+
+#' @return For `filters()`: list. For `filters<-`: updated `microEDA` object.
+#' @rdname info-accessors
+#' @aliases filters,microEDA-method
+#' @export
+setGeneric("filters", function(object) standardGeneric("filters"))
+setMethod("filters", "microEDA", function(object) object@info[["filters"]])
+
+#' @rdname info-accessors
+#' @aliases filters<-,microEDA-method
+#' @export
+setGeneric("filters<-", function(object, value) standardGeneric("filters<-"))
+setMethod("filters<-", "microEDA", function(object, value) {
+  object@info[["filters"]] <- value
+  validObject(object)
+  object
+})
+
+
+#' @return For `mpa_version()`: `character` string. For `mpa_version<-`: updated `microEDA` object.
+#' @rdname info-accessors
+#' @aliases mpa_version,microEDA-method
+#' @export
+#' @seealso \code{\link{mpa_version,metaphlanProfile-method}}
+setMethod("mpa_version", "microEDA", function(object) object@info[["mpa_version"]])
+
+#' @rdname info-accessors
+#' @aliases mpa_version<-,microEDA-method
+#' @export
+setMethod("mpa_version<-", "microEDA", function(object, value) {
+  object@info[["mpa_version"]] <- value
+  validObject(object)
+  object
 })
 
 

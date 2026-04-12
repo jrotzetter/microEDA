@@ -23,3 +23,6 @@ The recorded MetaPhlAn database version (when getting), or updated \code{metaphl
 \description{
 Get or set the MetaPhlAn database version
 }
+\seealso{
+\code{\link{mpa_version,microEDA-method}}
+}
