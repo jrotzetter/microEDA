@@ -13,36 +13,6 @@ setClass("microEDA",
 )
 
 
-#' Extract taxonomic table
-#'
-#' @param object An object of class \code{microEDA}.
-#' @return The tax_table component of the microEDA/phyloseq object.
-#' @rdname getTaxTable-methods
-#' @docType methods
-#' @exportMethod getTaxTable
-setGeneric("getTaxTable", function(object) standardGeneric("getTaxTable"))
-#' @rdname getTaxTable-methods
-#' @aliases getTaxTable,microEDA-method
-setMethod("getTaxTable", "microEDA", function(object) {
-  object@tax_table
-})
-
-
-#' Extract sample data
-#'
-#' @param object An object of class \code{microEDA}.
-#' @return The sam_data component of the microEDA/phyloseq object.
-#' @rdname getSampleData-methods
-#' @docType methods
-#' @exportMethod getSampleData
-setGeneric("getSampleData", function(object) standardGeneric("getSampleData"))
-#' @rdname getSampleData-methods
-#' @aliases getSampleData,microEDA-method
-setMethod("getSampleData", "microEDA", function(object) {
-  object@sam_data
-})
-
-
 #' Check taxonomic rank of the profile
 #'
 #' @param object An object of class \code{microEDA}.

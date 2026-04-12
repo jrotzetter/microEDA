@@ -2,11 +2,11 @@
 
 export(join_mpa_profiles)
 export(load_metaphlan)
+export(mpa_taxProfile)
+export(mpa_version)
 exportClasses(metaphlanProfile)
 exportClasses(microEDA)
 exportMethods(checkProfileRank)
-exportMethods(getSampleData)
-exportMethods(getTaxTable)
 exportMethods(microEDA)
 importClassesFrom(phyloseq,phyloseq)
 importFrom(rlang,":=")
