@@ -238,3 +238,39 @@
   msg <- paste("In", call_str, ":\n ", errormessage)
   stop(msg, call. = FALSE)
 }
+
+
+#' Warn about and filter disallowed arguments in ellipsis
+#'
+#' @description This function is used to restrict which arguments can be set
+#'  through the ellipsis (`...`). It checks for allowed parameters and warns
+#'  on disallowed ones while removing them from the `arglist` list.
+#'
+#' @param allowed A `character` vector specifying the names of allowed parameters.
+#' @param arglist A named `list` containing all provided arguments in the ellipsis (`...`).
+#'
+#' @returns The modified `arglist` list with only allowed arguments.
+#' @keywords internal
+#' @noRd
+#'
+#' @examples
+#' example_fun <- function(...) {
+#'   allowed_args <- c("fill", "alpha")
+#'   arglist <- list(...)
+#'   .warn_invalid_args(allowed_args, arglist)
+#' }
+#' example_fun(fill = "red", color = "blue", alpha = 0.7)
+.warn_invalid_args <- function(allowed, arglist) {
+  provided <- names(arglist)
+
+  # Check if any arguments are not in the allowed vector
+  disallowed <- setdiff(provided, allowed)
+  if (length(disallowed)) {
+    .show_warning(warnmessage = paste(
+      "Ignoring invalid arguments:",
+      paste(disallowed, collapse = ", ")
+    ))
+  }
+  # Keep only allowed args
+  arglist <- arglist[intersect(provided, allowed)]
+}
