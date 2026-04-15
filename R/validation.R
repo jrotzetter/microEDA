@@ -274,3 +274,18 @@
   # Keep only allowed args
   arglist <- arglist[intersect(provided, allowed)]
 }
+
+
+#' Check if sample (meta)data is present in object
+#'
+#' @param x A `microEDA` or `phyloseq` object
+#'
+#' @returns `TRUE` if sample data is present; `FALSE` otherwise.
+#' @keywords internal
+#' @noRd
+.check_sample_data <- function(x) {
+  stopifnot(inherits(x, "phyloseq"))
+  metadata <- phyloseq::sample_data(x, errorIfNULL = FALSE)
+  # If no metadata the above will simply return NULL
+  length(metadata) > 0
+}
