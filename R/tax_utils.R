@@ -1,3 +1,9 @@
+#' Taxonomic rank abbreviations
+#'
+#' Named character vector mapping full taxonomic rank names to their abbreviations.
+#' Used internally by `.trim_rank_prefix()` and `.add_rank_prefix()`.
+#' @keywords internal
+#' @noRd
 .tax_ranks <- c(
   Kingdom = "k",
   Phylum = "p",
@@ -45,4 +51,36 @@
     tax_table[[tax_rank]] <- paste0(prefix, "__", tax_table[[tax_rank]])
   }
   return(tax_table)
+}
+
+
+#' Map abbreviated or lowercase taxonomic rank to full name
+#'
+#' Converts short-form taxonomic rank codes (e.g., "p", "g") or lowercase names
+#' to their full names (e.g., "Phylum", "Genus").
+#'
+#' @param tax_rank `Character` vector with abbreviated or lowercase taxonomic rank name.
+#' @return `Character` vector with the full rank name (e.g., "Family").
+#' @keywords internal
+#' @noRd
+.get_full_tax_rank <- function(tax_rank) {
+  lookup <- c(
+    "k" = "Kingdom",
+    "p" = "Phylum",
+    "c" = "Class",
+    "o" = "Order",
+    "f" = "Family",
+    "g" = "Genus",
+    "s" = "Species",
+    "t" = "Strain",
+    "kingdom" = "Kingdom",
+    "phylum" = "Phylum",
+    "class" = "Class",
+    "order" = "Order",
+    "family" = "Family",
+    "genus" = "Genus",
+    "species" = "Species",
+    "strain" = "Strain"
+  )
+  tax_rank <- unname(lookup[tolower(tax_rank)])
 }
