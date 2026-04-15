@@ -85,6 +85,47 @@
 }
 
 
+#' Check if Taxonomic Rank is Valid
+#'
+#' Internal function to validate whether a given taxonomic level is one of the
+#' accepted ranks. The function checks against a predefined set of valid ranks,
+#' including both abbreviated (e.g., "k", "p") and full names (e.g., "kingdom", "Phylum").
+#'
+#' @param taxa_lvl A `character` string representing the taxonomic rank to be validated.
+#'
+#' @return A `logical` value: `TRUE` if the taxonomic rank is valid, `FALSE` otherwise.
+#'
+#' @keywords internal
+#' @noRd
+#'
+#' @examples
+#' .is_valid_rank("Genus") # TRUE
+#' .is_valid_rank("g") # TRUE
+#' .is_valid_rank("tribe") # FALSE
+.is_valid_rank <- function(taxa_lvl) {
+  stopifnot(is.character(taxa_lvl))
+
+  taxa_lvl <- tolower(taxa_lvl)
+
+  valid_taxa_lvls <- c(
+    "k", "p", "c", "o", "f", "g", "s", "t", "kingdom", "phylum",
+    "class", "order", "family", "genus", "species", "strain"
+  )
+  taxa_lvl %in% valid_taxa_lvls
+}
+
+
+#' Valid Taxonomic Ranks Error Message
+#'
+#' Internal character vector containing the error message that should be returned
+#' when an invalid taxonomic rank is provided. Intended to be used in conjunction
+#' with `.is_valid_rank()` for input validation in other functions.
+#'
+#' @keywords internal
+#' @noRd
+.valid_ranks_msg <- "Invalid tax_rank. Please choose one of 'kingdom', 'phylum','class', 'order', 'family', 'genus', 'species' or 'strain'."
+
+
 #' Check for reserved column names and rename if necessary
 #'
 #' @param x The data frame to check.
