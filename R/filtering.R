@@ -153,14 +153,31 @@
 #' @keywords internal
 #' @noRd
 .add_other_row <- function(filtered_df, initial_colsums, tax_col = "tax_ID") {
-  # TODO: prevent function from adding an additional 'Other' row if already
-  # present and merge instead
   is_numeric <- vapply(filtered_df, is.numeric, logical(1L))
 
   filtered_colsums <- colSums(filtered_df[, is_numeric], na.rm = TRUE)
 
-  other_row <- as.data.frame(t(initial_colsums - filtered_colsums))
+  # Check for existing 'Other' rows
+  other_mask <- filtered_df[[tax_col]] == "Other"
+
+  # Sum all 'Other' rows if any exist
+  if (any(other_mask)) {
+    other_sum <- colSums(filtered_df[other_mask, is_numeric, drop = FALSE], na.rm = TRUE)
+    # Remove all existing 'Other' rows
+    filtered_df <- filtered_df[!other_mask, ]
+  } else {
+    other_sum <- 0
+  }
+
+  # Compute difference between initial data and filtered data
+  # - other_sum: Adjust by removing prior "Other" as we don't want to exclude
+  # them from other_vals
+  other_vals <- initial_colsums - (filtered_colsums - other_sum)
+
+  # Convert vector to one row data.frame and assign tax_ID
+  other_row <- as.data.frame(t(other_vals))
   other_row[[tax_col]] <- "Other"
+
 
   df_combined <- dplyr::bind_rows(filtered_df, other_row)
 
