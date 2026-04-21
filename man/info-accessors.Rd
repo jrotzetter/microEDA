@@ -45,29 +45,29 @@ filters(object) <- value
 \arguments{
 \item{object}{A \linkS4class{microEDA} object.}
 
-\item{value}{For \verb{info<-}: A \code{list} containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.
-
-For \verb{taxrank<-}: A \code{character} string specifying the taxonomic rank (e.g., "Species", "Genus").
-
-For \verb{transforms<-}: A \code{character} vector of applied transformation(s) (e.g., c("TSS", "log2")).
-
-For \verb{filters<-}: A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).
-
-For \verb{mpa_version<-}: A \code{character} string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").}
+\item{value}{Only used in replacement methods (setters).
+\describe{
+\item{For \verb{info<-}: }{A \code{list} containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.}
+\item{For \verb{taxrank<-}: }{A \code{character} string specifying the taxonomic rank (e.g., "Species", "Genus").}
+\item{For \verb{transforms<-}: }{A \code{character} vector of applied transformation(s) (e.g., c("TSS", "log2")).}
+\item{For \verb{filters<-}: }{A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).}
+\item{For \verb{mpa_version<-}: }{A \code{character} string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").}
+}}
 }
 \value{
-For \code{info()}: A \code{list} containing metadata. For \verb{info<-}: updated \code{microEDA} object.
-
-For \code{taxrank()}: \code{character} string. For \verb{taxrank<-}: updated \code{microEDA} object.
-
-For \code{transforms()}: \code{character} vector. For \verb{transforms<-}: updated \code{microEDA} object.
-
-For \code{filters()}: list. For \verb{filters<-}: updated \code{microEDA} object.
-
-For \code{mpa_version()}: \code{character} string. For \verb{mpa_version<-}: updated \code{microEDA} object.
+\describe{
+\item{For \code{info()}: }{A \code{list} containing metadata.}
+\item{For \code{taxrank()}: }{A \code{character} string with the lowest taxonomic rank.}
+\item{For \code{transforms()}: }{A \code{character} vector of applied transformations.}
+\item{For \code{filters()}: }{A \code{list} of used filter parameters.}
+\item{For \code{mpa_version()}: }{A \code{character} string with the used the MetaPhlAn database version.}
+}
+Replacement methods (\verb{<-}) will return a \code{microEDA} object with the updated
+corresponding slots.
 }
 \description{
-Accessor methods for either retrieving or setting the info slot in a \code{microEDA} object.
+Accessor methods for either retrieving or setting the info slot in a
+\linkS4class{microEDA} object.
 Additionally, each expected element of the info slot can be retrieved or set
 individually.
 }

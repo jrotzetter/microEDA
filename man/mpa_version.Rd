@@ -6,7 +6,7 @@
 \alias{mpa_version,metaphlanProfile-method}
 \alias{mpa_version<-}
 \alias{mpa_version<-,metaphlanProfile-method}
-\title{Get or set the MetaPhlAn database version}
+\title{Get or set the MetaPhlAn database version.}
 \usage{
 mpa_version(object)
 
@@ -21,7 +21,7 @@ mpa_version(object) <- value
 The recorded MetaPhlAn database version (when getting), or updated \code{metaphlanProfile} (when setting).
 }
 \description{
-Get or set the MetaPhlAn database version
+Get or set the MetaPhlAn database version.
 }
 \seealso{
 \code{\link{mpa_version,microEDA-method}}

@@ -14,7 +14,7 @@ setClass("metaphlanProfile",
 )
 
 
-#' Get or set the MetaPhlAn database version
+#' Get or set the MetaPhlAn database version.
 #'
 #' @param object An object of class `metaphlanProfile`.
 #' @param value A `character` string with a new MetaPhlAn database version (used only in assignment).

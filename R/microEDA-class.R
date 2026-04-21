@@ -16,21 +16,29 @@ setClass("microEDA",
 #' Get or set the info slot from a microEDA object
 #'
 #' @description
-#' Accessor methods for either retrieving or setting the info slot in a `microEDA` object.
+#' Accessor methods for either retrieving or setting the info slot in a
+#' \linkS4class{microEDA} object.
 #' Additionally, each expected element of the info slot can be retrieved or set
 #' individually.
 #'
 #' @param object A \linkS4class{microEDA} object.
-#' @param value For `info<-`: A `list` containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.
-#'
-#'  For `taxrank<-`: A `character` string specifying the taxonomic rank (e.g., "Species", "Genus").
-#'
-#'  For `transforms<-`: A `character` vector of applied transformation(s) (e.g., c("TSS", "log2")).
-#'
-#'  For `filters<-`: A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).
-#'
-#'  For `mpa_version<-`: A `character` string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").
-#' @return For `info()`: A `list` containing metadata. For `info<-`: updated `microEDA` object.
+#' @param value Only used in replacement methods (setters).
+#' \describe{
+#'  \item{For `info<-`: }{A `list` containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.}
+#'  \item{For `taxrank<-`: }{A `character` string specifying the taxonomic rank (e.g., "Species", "Genus").}
+#'  \item{For `transforms<-`: }{A `character` vector of applied transformation(s) (e.g., c("TSS", "log2")).}
+#'  \item{For `filters<-`: }{A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).}
+#'  \item{For `mpa_version<-`: }{A `character` string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").}
+#'  }
+#' @return \describe{
+#'  \item{For `info()`: }{A `list` containing metadata.}
+#'  \item{For `taxrank()`: }{A `character` string with the lowest taxonomic rank.}
+#'  \item{For `transforms()`: }{A `character` vector of applied transformations.}
+#'  \item{For `filters()`: }{A `list` of used filter parameters.}
+#'  \item{For `mpa_version()`: }{A `character` string with the used the MetaPhlAn database version.}
+#' }
+#' Replacement methods (`<-`) will return a `microEDA` object with the updated
+#' corresponding slots.
 #' @details
 #' `taxrank`: represents the lowest available taxonomic rank.
 #'
@@ -75,7 +83,6 @@ setMethod("info<-", "microEDA", function(object, value) {
 })
 
 
-#' @return For `taxrank()`: `character` string. For `taxrank<-`: updated `microEDA` object.
 #' @rdname info-accessors
 #' @aliases taxrank,microEDA-method
 #' @export
@@ -93,7 +100,6 @@ setMethod("taxrank<-", "microEDA", function(object, value) {
 })
 
 
-#' @return For `transforms()`: `character` vector. For `transforms<-`: updated `microEDA` object.
 #' @rdname info-accessors
 #' @aliases transforms,microEDA-method
 #' @export
@@ -111,7 +117,6 @@ setMethod("transforms<-", "microEDA", function(object, value) {
 })
 
 
-#' @return For `filters()`: list. For `filters<-`: updated `microEDA` object.
 #' @rdname info-accessors
 #' @aliases filters,microEDA-method
 #' @export
@@ -129,7 +134,6 @@ setMethod("filters<-", "microEDA", function(object, value) {
 })
 
 
-#' @return For `mpa_version()`: `character` string. For `mpa_version<-`: updated `microEDA` object.
 #' @rdname info-accessors
 #' @aliases mpa_version,microEDA-method
 #' @export
