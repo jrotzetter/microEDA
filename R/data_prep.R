@@ -1,13 +1,16 @@
 #' Fill unclassified taxonomic rank using last known parent clade
 #'
-#' This internal function replaces missing or empty taxonomic values (including `NA`, `""`, `" "`, `"\t"`)
+#' This internal function replaces missing or empty taxonomic entries (including `NA`, `""`, `" "`, `"\t"`)
 #' with "Unclassified". For the specified target rank, it further relabels "Unclassified" entries
 #' as "Unclassified {Last_Known_Parent}" using the last known parent clade.
 #'
 #' @param taxa A `data.frame` or `matrix` where columns represent taxonomic ranks
-#'   (e.g., Kingdom, Phylum, Class) in hierarchical order, and rows represent taxa.
+#'   (e.g., Kingdom, Phylum, Class, Order, Family, Genus, Species) in hierarchical order,
+#'   and rows represent taxa.
 #' @param taxrank A `character` string specifying the target taxonomic rank (e.g., "Genus")
 #'   to process and relabel.
+#' @param silent A `logical` value indicating whether to suppress warnings.
+#'   If `FALSE`, a warning is issued if any rows are fully unclassified across all ranks.
 #'
 #' @return A `matrix` with:
 #'   - Missing/empty values replaced by "Unclassified".
@@ -66,7 +69,7 @@
   if (!silent) {
     n_all_unclass <- sum(last_valid == "")
     if (n_all_unclass > 0) {
-      warning(n_all_unclass, " rows are fully unclassified up to rank '", taxrank, "'.")
+      warning(n_all_unclass, " row(s) are fully unclassified up to rank '", taxrank, "'.")
     }
   }
 
@@ -74,6 +77,83 @@
   taxa[is_unclass, idx] <- ifelse(last_valid == "", "Unclassified",
     paste("Unclassified", last_valid)
   )
+
+  return(taxa)
+}
+
+
+#' Fill all unclassified taxonomic ranks using the last known parent clade
+#'
+#' This internal function replaces missing or empty taxonomic entries (including `NA`, `""`, `" "`, `"\t"`)
+#' with "Unclassified". It then processes all taxonomic ranks sequentially, relabeling "Unclassified"
+#' entries as "Unclassified {Last_Known_Parent}" using the last known valid parent clade from higher ranks.
+#'
+#' The function propagates the most recent non-unclassified taxon name across lower ranks,
+#' ensuring consistent hierarchical context for unclassified taxa. Fully unclassified rows
+#' (i.e., all ranks are "Unclassified") remain labeled as "Unclassified".
+#'
+#' @param taxa A `data.frame` or `matrix` where columns represent taxonomic ranks
+#'   (e.g., Kingdom, Phylum, Class, Order, Family, Genus, Species) in hierarchical order,
+#'   and rows represent taxa.
+#' @param silent A `logical` value indicating whether to suppress warnings.
+#'   If `FALSE`, a warning is issued if any rows are fully unclassified across all ranks.
+#'
+#' @return A `matrix` of the same dimensions as input, with:
+#'   - All missing/empty values replaced by "Unclassified".
+#'   - "Unclassified" entries in each rank relabeled as "Unclassified {Parent}"
+#'     where `{Parent}` is the last non-unclassified taxon in the row up to that point.
+#'   - Fully unclassified rows remain as "Unclassified" in all columns.
+#'   - All original columns preserved (no column subsetting).
+#'
+#' @examples
+#' taxa <- data.frame(
+#'   Kingdom = c("Kingdom1", "Kingdom2", "Kingdom3", "Kingdom4", "Kingdom5", "Kingdom6", ""),
+#'   Phylum = c("Phylum1", "", "Phylum3", "Phylum4", "Phylum5", "", NA),
+#'   Class = c("Class1", "Class2", " ", "\t", NA, "Class6", ""),
+#'   Order = c("Order1", "Order2", NA, "Order4", NA, "", " ")
+#' )
+#' rownames(taxa) <- c("OTU1", "OTU2", "OTU3", "OTU4", "OTU5", "OTU6", "OTU7")
+#'
+#' .fill_unclassified_all(taxa, silent = FALSE)
+#'
+#' @keywords internal
+#' @noRd
+.fill_unclassified_all <- function(taxa, silent = TRUE) {
+  stopifnot(is.data.frame(taxa) || is.matrix(taxa))
+
+  # Convert to character matrix for speed
+  taxa <- as.matrix(taxa)
+
+  # Replace all NA's or empty strings
+  empty_vals <- c(NA, "", " ", "\t")
+  taxa[taxa %in% empty_vals] <- "Unclassified"
+
+  # Track last valid (non-unclassified) name per row across ranks
+  last_valid <- rep("", nrow(taxa))
+
+  for (j in seq_len(ncol(taxa))) {
+    col <- taxa[, j]
+    is_unclass <- col == "Unclassified"
+    # Replace unclassified with "Unclassified <Parent>" using last valid name
+    col[is_unclass] <- ifelse(last_valid[is_unclass] == "",
+      "Unclassified",
+      paste("Unclassified", last_valid[is_unclass])
+    )
+    taxa[, j] <- col
+
+    # Update last_valid with names of "true" taxa (not "Unclassified" or
+    # "Unclassified <Parent>") so they propagate to lower ranks
+    true_name <- !grepl("^Unclassified($| )", taxa[, j])
+    last_valid[true_name] <- taxa[true_name, j]
+  }
+
+  if (!silent) {
+    all_unclass <- apply(taxa, 1, function(x) all(grepl("^Unclassified($| )", x)))
+    n_all_unclass <- sum(all_unclass)
+    if (n_all_unclass > 0) {
+      warning(n_all_unclass, " row(s) are fully unclassified across all ranks.")
+    }
+  }
 
   return(taxa)
 }
