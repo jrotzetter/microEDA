@@ -391,4 +391,6 @@ filter_features <- function(me,
   }
   # Reconstruct microEDA
   microEDA_filtered <- new("microEDA", filtered_data, info = me@info)
+  filters(microEDA_filtered) <- c(min_abundance = min_abundance, min_prevalence = min_prevalence)
+  return(microEDA_filtered)
 }
