@@ -185,14 +185,14 @@
 }
 
 
-#' Filter Features in a microEDA Object Based on Abundance and Prevalence
+#' Filter Features Based on Abundance and Prevalence
 #'
-#' Filters taxa (features) from a `microEDA` object based on minimum abundance
+#' Filters taxa (features) from a `microEDA` or `phyloseq` object based on minimum abundance
 #' and prevalence thresholds. Filtering can be applied globally or within groups
 #' defined by a metadata variable. Optionally adds an "Other" category summarizing
 #' filtered features.
 #'
-#' @param me A `microEDA` object containing microbiome abundance data and associated metadata.
+#' @param me A `microEDA` or `phyloseq` object containing microbiome abundance data and associated metadata.
 #' @param group_var (optional) Name of the sample metadata variable to define groups
 #'   for stratified filtering. If `NULL`, filtering is applied across all samples.
 #' @param min_abundance `Numeric` value. Minimum abundance threshold for a feature to be retained.
@@ -215,9 +215,10 @@
 #'   named `"Other"` to the OTU and tax tables, summarizing the total abundance of
 #'   all filtered features. Existing `"Other"` rows are merged.
 #'
-#' @return A new `microEDA` object with filtered features. A message reports how many
-#'   features were removed. If `keep_other = TRUE` and features were removed,
-#'   an `"Other"` row is added or updated.
+#' @return A new `microEDA` or `phyloseq` object with features not meeting the
+#'   requirements removed. A message reports how many features were dropped. If
+#'   `keep_other = TRUE` and features were removed, an `"Other"` row is added or
+#'   updated.
 #'
 #' @examples
 #' data(GlobalPatterns, package = "phyloseq")
@@ -248,8 +249,8 @@ filter_features <- function(me,
                             abundance_criterion = c("prevalence", "mean"),
                             group_requirement = c("any", "all"),
                             keep_other = TRUE) {
-  if (!inherits(me, "microEDA")) {
-    stop("'me' must be a microEDA object")
+  if (!inherits(me, "microEDA") && !inherits(me, "phyloseq")) {
+    stop("'me' must be a microEDA or phyloseq object.")
   }
   abundance_criterion <- match.arg(abundance_criterion)
   group_requirement <- match.arg(group_requirement)
@@ -389,8 +390,13 @@ filter_features <- function(me,
     new_tax <- rbind(pruned_tax, other_tax)
     filtered_data@tax_table <- phyloseq::tax_table(new_tax)
   }
-  # Reconstruct microEDA
-  microEDA_filtered <- new("microEDA", filtered_data, info = me@info)
-  filters(microEDA_filtered) <- c(min_abundance = min_abundance, min_prevalence = min_prevalence)
-  return(microEDA_filtered)
+
+  if (inherits(me, "microEDA")) {
+    # Reconstruct microEDA
+    filtered_obj <- new("microEDA", filtered_data, info = me@info)
+    filters(filtered_obj) <- c(min_abundance = min_abundance, min_prevalence = min_prevalence)
+  } else {
+    filtered_obj <- filtered_data # As it will already be a phyloseq object in this case
+  }
+  return(filtered_obj)
 }
