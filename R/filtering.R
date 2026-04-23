@@ -211,14 +211,15 @@
 #' @param group_requirement `Character` string. When `group_var` is specified, determines
 #'   whether the criterion must be met in `"any"` group or `"all"` groups.
 #'   Default: `"any"`.
-#' @param keep_other `Logical`. If `TRUE` and any features are removed, adds a new row
-#'   named `"Other"` to the OTU and tax tables, summarizing the total abundance of
-#'   all filtered features. Existing `"Other"` rows are merged.
+#' @param keep_other `Logical`. If `TRUE` and any features are removed, stores the
+#'   otu_table and tax_table of the filtered-out features in the `@info$filtered_taxa`
+#'   slot of `microEDA` objects as matrices. Has no effect for `phyloseq` objects.
 #'
 #' @return A new `microEDA` or `phyloseq` object with features not meeting the
 #'   requirements removed. A message reports how many features were dropped. If
-#'   `keep_other = TRUE` and features were removed, an `"Other"` row is added or
-#'   updated.
+#'   `keep_other = TRUE` and features were removed, the abundances and taxonomy
+#'   of the removed features are stored in the `filtered_taxa()` slot of `microEDA`
+#'   objects.
 #'
 #' @examples
 #' data(GlobalPatterns, package = "phyloseq")
@@ -345,55 +346,78 @@ filter_features <- function(me,
   n_removed <- phyloseq::ntaxa(me) - phyloseq::ntaxa(filtered_data)
   if (n_removed > 0) {
     message("Total filtered features: ", n_removed, "\n")
-    dropped <- setdiff(taxa_names, taxa_to_keep)
-    message("Filtered features: ", toString(dropped), "\n")
+    # Extract filtered-out taxa
+    dropped_taxa <- setdiff(taxa_names, taxa_to_keep)
+    message("Filtered features: ", toString(dropped_taxa), "\n")
   }
 
   # Add "Other" row if taxa were removed
   if (keep_other && n_removed > 0) {
-    orig_otu <- phyloseq::otu_table(me)
-    pruned_otu <- phyloseq::otu_table(filtered_data)
-    pruned_tax <- phyloseq::tax_table(filtered_data)
+    if (inherits(me, "microEDA")) {
+      # # Create a mini phyloseq object for filtered taxa
+      # other_ps <- phyloseq::prune_taxa(dropped_taxa, me)
+      #
+      # # Store in microEDA@info
+      # filtered_taxa(filtered_data) <- phyloseq::phyloseq(
+      #   phyloseq::otu_table(other_ps),
+      #   phyloseq::tax_table(other_ps),
+      #   phyloseq::phy_tree(other_ps, errorIfNULL = FALSE)
+      # )
 
-    # Check for existing 'Other' rows
-    other_mask <- rownames(pruned_otu) == "Other"
+      # After filtering, store only minimal data to minimize object size
+      filtered_otu <- otu_table(me)[dropped_taxa, , drop = FALSE]
+      filtered_tax <- tax_table(me)[dropped_taxa, , drop = FALSE]
 
-    # Sum all 'Other' rows if any exist
-    if (any(other_mask)) {
-      other_sum <- colSums(pruned_otu[other_mask, , drop = FALSE], na.rm = TRUE)
-      # Remove all existing 'Other' rows
-      pruned_otu <- pruned_otu[!other_mask, ]
-      pruned_tax <- pruned_tax[!other_mask, ]
-    } else {
-      other_sum <- 0
+      # Save as matrices in microEDA@info, avoiding full phyloseq overhead
+      filtered_taxa(filtered_data) <- list(
+        filtered_otu = as(filtered_otu, "matrix"),
+        filtered_tax = as(filtered_tax, "matrix")
+      )
     }
 
-    # Compute "Other" as difference
-    other_vals <- colSums(orig_otu) - colSums(pruned_otu) + other_sum
-    other_row <- matrix(other_vals,
-      nrow = 1,
-      dimnames = list("Other", colnames(other_vals))
-    )
-
-    # Extend OTU table
-    new_otu <- rbind(pruned_otu, other_row)
-    filtered_data@otu_table <- phyloseq::otu_table(new_otu, taxa_are_rows = TRUE)
-
-    # Extend tax_table with "Other" for all taxonomic ranks
-    n_tax_ranks <- ncol(pruned_tax)
-    other_tax <- matrix("Other",
-      nrow = 1, ncol = n_tax_ranks,
-      dimnames = list("Other", colnames(pruned_tax))
-    )
-
-    # Bind to existing tax table
-    new_tax <- rbind(pruned_tax, other_tax)
-    filtered_data@tax_table <- phyloseq::tax_table(new_tax)
+    # orig_otu <- phyloseq::otu_table(me)
+    # pruned_otu <- phyloseq::otu_table(filtered_data)
+    # pruned_tax <- phyloseq::tax_table(filtered_data)
+    #
+    # # Check for existing 'Other' rows
+    # other_mask <- rownames(pruned_otu) == "Other"
+    #
+    # # Sum all 'Other' rows if any exist
+    # if (any(other_mask)) {
+    #   other_sum <- colSums(pruned_otu[other_mask, , drop = FALSE], na.rm = TRUE)
+    #   # Remove all existing 'Other' rows
+    #   pruned_otu <- pruned_otu[!other_mask, ]
+    #   pruned_tax <- pruned_tax[!other_mask, ]
+    # } else {
+    #   other_sum <- 0
+    # }
+    #
+    # # Compute "Other" as difference
+    # other_vals <- colSums(orig_otu) - colSums(pruned_otu) + other_sum
+    # other_row <- matrix(other_vals,
+    #   nrow = 1,
+    #   dimnames = list("Other", colnames(other_vals))
+    # )
+    #
+    # # Extend OTU table
+    # new_otu <- rbind(pruned_otu, other_row)
+    # filtered_data@otu_table <- phyloseq::otu_table(new_otu, taxa_are_rows = TRUE)
+    #
+    # # Extend tax_table with "Other" for all taxonomic ranks
+    # n_tax_ranks <- ncol(pruned_tax)
+    # other_tax <- matrix("Other",
+    #   nrow = 1, ncol = n_tax_ranks,
+    #   dimnames = list("Other", colnames(pruned_tax))
+    # )
+    #
+    # # Bind to existing tax table
+    # new_tax <- rbind(pruned_tax, other_tax)
+    # filtered_data@tax_table <- phyloseq::tax_table(new_tax)
   }
 
   if (inherits(me, "microEDA")) {
     # Reconstruct microEDA
-    filtered_obj <- new("microEDA", filtered_data, info = me@info)
+    filtered_obj <- new("microEDA", filtered_data)
     filters(filtered_obj) <- c(min_abundance = min_abundance, min_prevalence = min_prevalence)
   } else {
     filtered_obj <- filtered_data # As it will already be a phyloseq object in this case

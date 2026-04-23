@@ -27,15 +27,17 @@ setClass("microEDA",
 #'  \item{For `info<-`: }{A `list` containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.}
 #'  \item{For `taxrank<-`: }{A `character` string specifying the taxonomic rank (e.g., "Species", "Genus").}
 #'  \item{For `transforms<-`: }{A `character` vector of applied transformation(s) (e.g., c("TSS", "log2")).}
-#'  \item{For `filters<-`: }{A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).}
 #'  \item{For `mpa_version<-`: }{A `character` string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").}
+#'  \item{For `filtered_taxa<-`: }{A `list` with otu_table and tax_table (as matrices) of features that were filtered out.}
+#'  \item{For `filters<-`: }{A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).}
 #'  }
 #' @return \describe{
 #'  \item{For `info()`: }{A `list` containing metadata.}
 #'  \item{For `taxrank()`: }{A `character` string with the lowest taxonomic rank.}
 #'  \item{For `transforms()`: }{A `character` vector of applied transformations.}
-#'  \item{For `filters()`: }{A `list` of used filter parameters.}
 #'  \item{For `mpa_version()`: }{A `character` string with the used the MetaPhlAn database version.}
+#'  \item{For `filtered_taxa()`: }{A `list` with otu_table and tax_table of features that were filtered out.}
+#'  \item{For `filters()`: }{A `list` of used filter parameters.}
 #' }
 #' Replacement methods (`<-`) will return a `microEDA` object with the updated
 #' corresponding slots.
@@ -44,9 +46,11 @@ setClass("microEDA",
 #'
 #' `transforms`: represents transformation(s) that were applied to the abundance data (otu_table).
 #'
-#' `filters`: represents filters that were applied to the abundance data (otu_table).
-#'
 #' `mpa_version`: represents the MetaPhlAn database version that was used to create the profile.
+#'
+#' `filtered_taxa`: represents the otu_table and tax_table of features that were filtered out.
+#'
+#' `filters`: represents filters that were applied to the abundance data (otu_table).
 #'
 #' @rdname info-accessors
 #' @aliases info,microEDA-method
@@ -68,7 +72,7 @@ setMethod(
 setGeneric("info<-", function(object, value) standardGeneric("info<-"))
 
 setMethod("info<-", "microEDA", function(object, value) {
-  valid_keys <- c("taxrank", "transforms", "filters", "mpa_version")
+  valid_keys <- c("taxrank", "transforms", "filters", "mpa_version", "filtered_taxa")
   if (!is.list(value)) stop("'info' must be a named list.")
 
   if (any(!names(value) %in% valid_keys)) {
@@ -118,23 +122,6 @@ setMethod("transforms<-", "microEDA", function(object, value) {
 
 
 #' @rdname info-accessors
-#' @aliases filters,microEDA-method
-#' @export
-setGeneric("filters", function(object) standardGeneric("filters"))
-setMethod("filters", "microEDA", function(object) object@info[["filters"]])
-
-#' @rdname info-accessors
-#' @aliases filters<-,microEDA-method
-#' @export
-setGeneric("filters<-", function(object, value) standardGeneric("filters<-"))
-setMethod("filters<-", "microEDA", function(object, value) {
-  object@info[["filters"]] <- value
-  validObject(object)
-  object
-})
-
-
-#' @rdname info-accessors
 #' @aliases mpa_version,microEDA-method
 #' @export
 #' @seealso \code{\link{mpa_version,metaphlanProfile-method}}
@@ -150,6 +137,40 @@ setMethod("mpa_version<-", "microEDA", function(object, value) {
 })
 
 
+#' @rdname info-accessors
+#' @aliases filtered_taxa,microEDA-method
+#' @export
+setGeneric("filtered_taxa", function(object) standardGeneric("filtered_taxa"))
+setMethod("filtered_taxa", "microEDA", function(object) object@info[["filtered_taxa"]])
+
+#' @rdname info-accessors
+#' @aliases filtered_taxa<-,microEDA-method
+#' @export
+setGeneric("filtered_taxa<-", function(object, value) standardGeneric("filtered_taxa<-"))
+setMethod("filtered_taxa<-", "microEDA", function(object, value) {
+  # if (!inherits(value, "phyloseq")) stop("'value' must be a phyloseq object containing otu and tax table of filtered out taxa.")
+  if (!is.list(value)) stop("'value' must be a named list containing otu and tax table of filtered out taxa.")
+  object@info[["filtered_taxa"]] <- value
+  validObject(object)
+  object
+})
+
+
+#' @rdname info-accessors
+#' @aliases filters,microEDA-method
+#' @export
+setGeneric("filters", function(object) standardGeneric("filters"))
+setMethod("filters", "microEDA", function(object) object@info[["filters"]])
+
+#' @rdname info-accessors
+#' @aliases filters<-,microEDA-method
+#' @export
+setGeneric("filters<-", function(object, value) standardGeneric("filters<-"))
+setMethod("filters<-", "microEDA", function(object, value) {
+  object@info[["filters"]] <- value
+  validObject(object)
+  object
+})
 ### //////////////////////////////////////////////////////////////////////// ###
 #### Methods for MetaPhlAn profiles ####
 

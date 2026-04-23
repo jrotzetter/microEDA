@@ -2,7 +2,7 @@
 % Please edit documentation in R/filtering.R
 \name{filter_features}
 \alias{filter_features}
-\title{Filter Features in a microEDA Object Based on Abundance and Prevalence}
+\title{Filter Features Based on Abundance and Prevalence}
 \usage{
 filter_features(
   me,
@@ -15,7 +15,7 @@ filter_features(
 )
 }
 \arguments{
-\item{me}{A \code{microEDA} object containing microbiome abundance data and associated metadata.}
+\item{me}{A \code{microEDA} or \code{phyloseq} object containing microbiome abundance data and associated metadata.}
 
 \item{min_abundance}{\code{Numeric} value. Minimum abundance threshold for a feature to be retained.
 Must be non-negative. Features with abundance below this are considered absent.}
@@ -40,17 +40,19 @@ Default: \code{"prevalence"}.}
 whether the criterion must be met in \code{"any"} group or \code{"all"} groups.
 Default: \code{"any"}.}
 
-\item{keep_other}{\code{Logical}. If \code{TRUE} and any features are removed, adds a new row
-named \code{"Other"} to the OTU and tax tables, summarizing the total abundance of
-all filtered features. Existing \code{"Other"} rows are merged.}
+\item{keep_other}{\code{Logical}. If \code{TRUE} and any features are removed, stores the
+otu_table and tax_table of the filtered-out features in the \verb{@info$filtered_taxa}
+slot of \code{microEDA} objects as matrices. Has no effect for \code{phyloseq} objects.}
 }
 \value{
-A new \code{microEDA} object with filtered features. A message reports how many
-features were removed. If \code{keep_other = TRUE} and features were removed,
-an \code{"Other"} row is added or updated.
+A new \code{microEDA} or \code{phyloseq} object with features not meeting the
+requirements removed. A message reports how many features were dropped. If
+\code{keep_other = TRUE} and features were removed, the abundances and taxonomy
+of the removed features are stored in the \code{filtered_taxa()} slot of \code{microEDA}
+objects.
 }
 \description{
-Filters taxa (features) from a \code{microEDA} object based on minimum abundance
+Filters taxa (features) from a \code{microEDA} or \code{phyloseq} object based on minimum abundance
 and prevalence thresholds. Filtering can be applied globally or within groups
 defined by a metadata variable. Optionally adds an "Other" category summarizing
 filtered features.

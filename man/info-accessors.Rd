@@ -14,12 +14,16 @@
 \alias{transforms,microEDA-method}
 \alias{transforms<-}
 \alias{transforms<-,microEDA-method}
+\alias{mpa_version,microEDA-method}
+\alias{mpa_version<-,microEDA-method}
+\alias{filtered_taxa}
+\alias{filtered_taxa,microEDA-method}
+\alias{filtered_taxa<-}
+\alias{filtered_taxa<-,microEDA-method}
 \alias{filters}
 \alias{filters,microEDA-method}
 \alias{filters<-}
 \alias{filters<-,microEDA-method}
-\alias{mpa_version,microEDA-method}
-\alias{mpa_version<-,microEDA-method}
 \title{Get or set the info slot from a microEDA object}
 \usage{
 info(object)
@@ -34,13 +38,17 @@ transforms(object)
 
 transforms(object) <- value
 
-filters(object)
-
-filters(object) <- value
-
 \S4method{mpa_version}{microEDA}(object)
 
 \S4method{mpa_version}{microEDA}(object) <- value
+
+filtered_taxa(object)
+
+filtered_taxa(object) <- value
+
+filters(object)
+
+filters(object) <- value
 }
 \arguments{
 \item{object}{A \linkS4class{microEDA} object.}
@@ -50,8 +58,9 @@ filters(object) <- value
 \item{For \verb{info<-}: }{A \code{list} containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.}
 \item{For \verb{taxrank<-}: }{A \code{character} string specifying the taxonomic rank (e.g., "Species", "Genus").}
 \item{For \verb{transforms<-}: }{A \code{character} vector of applied transformation(s) (e.g., c("TSS", "log2")).}
-\item{For \verb{filters<-}: }{A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).}
 \item{For \verb{mpa_version<-}: }{A \code{character} string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").}
+\item{For \verb{filtered_taxa<-}: }{A \code{list} with otu_table and tax_table (as matrices) of features that were filtered out.}
+\item{For \verb{filters<-}: }{A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).}
 }}
 }
 \value{
@@ -59,8 +68,9 @@ filters(object) <- value
 \item{For \code{info()}: }{A \code{list} containing metadata.}
 \item{For \code{taxrank()}: }{A \code{character} string with the lowest taxonomic rank.}
 \item{For \code{transforms()}: }{A \code{character} vector of applied transformations.}
-\item{For \code{filters()}: }{A \code{list} of used filter parameters.}
 \item{For \code{mpa_version()}: }{A \code{character} string with the used the MetaPhlAn database version.}
+\item{For \code{filtered_taxa()}: }{A \code{list} with otu_table and tax_table of features that were filtered out.}
+\item{For \code{filters()}: }{A \code{list} of used filter parameters.}
 }
 Replacement methods (\verb{<-}) will return a \code{microEDA} object with the updated
 corresponding slots.
@@ -76,9 +86,11 @@ individually.
 
 \code{transforms}: represents transformation(s) that were applied to the abundance data (otu_table).
 
-\code{filters}: represents filters that were applied to the abundance data (otu_table).
-
 \code{mpa_version}: represents the MetaPhlAn database version that was used to create the profile.
+
+\code{filtered_taxa}: represents the otu_table and tax_table of features that were filtered out.
+
+\code{filters}: represents filters that were applied to the abundance data (otu_table).
 }
 \seealso{
 \code{\link{mpa_version,metaphlanProfile-method}}
