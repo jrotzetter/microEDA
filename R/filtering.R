@@ -424,3 +424,50 @@ filter_features <- function(me,
   }
   return(filtered_obj)
 }
+
+
+#' @param me A `microEDA` object containing filtered taxa in filtered_taxa(me).
+#'
+#' @returns A `list` with two elements: other_row, a 1-row matrix/otu_table of
+#'  collapsed/summed abundances for filtered taxa merged into "Other", and other_tax,
+#'  a 1-row matrix/tax_table assigning the "Other" label to all taxonomic ranks.
+#'  Returns `NULL` if `me` is not a `microEDA` object or has no filtered taxa.
+#'
+#' @keywords internal
+#' @noRd
+.collapse_other <- function(me) {
+  if (!inherits(me, "microEDA") || is.null(filtered_taxa(me))) {
+    return(NULL)
+  }
+
+  # To reduce object size, avoid full phyloseq overhead and use matrices instead
+  # other_ps <- filtered_taxa(me)
+  # otu <- otu_table(other_ps)
+  # tax <- tax_table(other_ps)
+  #
+  # # Collapse abundances
+  # other_otu <- matrix(colSums(otu), nrow = 1, dimnames = list("Other", colnames(otu)))
+  # other_tax <- matrix("Other",
+  #   nrow = 1, ncol = ncol(tax),
+  #   dimnames = list("Other", colnames(tax))
+  # )
+  #
+  # # Construct minimal phyloseq object
+  # other_physeq <- phyloseq::phyloseq(
+  #   otu_table(other_otu, taxa_are_rows = TRUE),
+  #   tax_table(other_tax)
+  # )
+  #
+  # return(other_physeq)
+
+  otu <- filtered_taxa(me)$filtered_otu
+  tax <- filtered_taxa(me)$filtered_tax
+
+  # Collapse abundances
+  other_row <- matrix(colSums(otu), nrow = 1, dimnames = list("Other", colnames(otu)))
+  other_tax <- matrix("Other",
+    nrow = 1, ncol = ncol(tax),
+    dimnames = list("Other", colnames(tax))
+  )
+  list(other_row = other_row, other_tax = other_tax)
+}
