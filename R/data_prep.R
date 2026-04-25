@@ -176,21 +176,47 @@
     warning("Data contains negative entries. Result from applying TSS may not make sense.")
   }
 
-  # Get all numeric columns
-  is_numeric <- vapply(x, is.numeric, logical(1L))
+  # Handle data.frame and matrix differently
+  if (is.matrix(x)) {
+    if (!is.numeric(x)) stop("Matrix must be numeric.")
+    # # Vectorized thresholding
+    # x[x < presence_threshold] <- 0
+    # col_sums <- colSums(x, na.rm = TRUE)
+    # # Replace zero sums to avoid NaN
+    # col_sums[col_sums == 0] <- 1
+    # x <- sweep(x, 2, col_sums, "/") * prop_scale
+    # x[is.nan(x)] <- 0
 
-  x[is_numeric] <- lapply(x[is_numeric], function(col) {
-    col_thresh <- ifelse(col >= presence_threshold, col, 0)
+    # For speed, convert to data.frame, process, then convert back as data.frames
+    # store columns as list elements, allowing fast column access (matrices are
+    # vectors with dimensions; column extraction requires more computation)
+    x_df <- as.data.frame(x)
+    x_df[] <- lapply(x_df, function(col) {
+      col_thresh <- ifelse(col >= presence_threshold, col, 0)
+      if (all(col_thresh == 0, na.rm = TRUE)) {
+        return(rep(0, length(col)))
+      }
+      col_norm <- col_thresh / sum(col_thresh, na.rm = TRUE) * prop_scale
+      ifelse(is.nan(col_norm), 0, col_norm)
+    })
+    x <- as.matrix(x_df)
+  } else {
+    # Get all numeric columns
+    is_numeric <- vapply(x, is.numeric, logical(1L))
 
-    # Early exit if all values are zero after thresholding to avoid unnecessary
-    # computation
-    if (all(col_thresh == 0, na.rm = TRUE)) {
-      return(rep(0, length(col_thresh)))
-    }
+    x[is_numeric] <- lapply(x[is_numeric], function(col) {
+      col_thresh <- ifelse(col >= presence_threshold, col, 0)
 
-    col_norm <- col_thresh / sum(col_thresh, na.rm = TRUE) * prop_scale
-    # Replace NaN values resulting from division (e.g., 0/0) with 0
-    ifelse(is.nan(col_norm), 0, col_norm)
-  })
+      # Early exit if all values are zero after thresholding to avoid unnecessary
+      # computation
+      if (all(col_thresh == 0, na.rm = TRUE)) {
+        return(rep(0, length(col_thresh)))
+      }
+
+      col_norm <- col_thresh / sum(col_thresh, na.rm = TRUE) * prop_scale
+      # Replace NaN values resulting from division (e.g., 0/0) with 0
+      ifelse(is.nan(col_norm), 0, col_norm)
+    })
+  }
   return(x)
 }
