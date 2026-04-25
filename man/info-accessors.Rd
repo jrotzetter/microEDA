@@ -6,6 +6,9 @@
 \alias{info,microEDA-method}
 \alias{info<-}
 \alias{info<-,microEDA-method}
+\alias{infoKeys}
+\alias{infoFields}
+\alias{infoFields,microEDA-method}
 \alias{taxrank}
 \alias{taxrank,microEDA-method}
 \alias{taxrank<-}
@@ -29,6 +32,10 @@
 info(object)
 
 info(object) <- value
+
+infoKeys()
+
+infoFields(object)
 
 taxrank(object)
 
@@ -66,6 +73,8 @@ filters(object) <- value
 \value{
 \describe{
 \item{For \code{info()}: }{A \code{list} containing metadata.}
+\item{For \code{infoKeys()}: }{Lists valid keys for \code{microEDA} info slot.}
+\item{For \code{infoFields()}: }{Lists available field(s) in \code{object} info slot.}
 \item{For \code{taxrank()}: }{A \code{character} string with the lowest taxonomic rank.}
 \item{For \code{transforms()}: }{A \code{character} vector of applied transformations.}
 \item{For \code{mpa_version()}: }{A \code{character} string with the used the MetaPhlAn database version.}
@@ -80,6 +89,9 @@ Accessor methods for either retrieving or setting the info slot in a
 \linkS4class{microEDA} object.
 Additionally, each expected element of the info slot can be retrieved or set
 individually.
+Valid keys for the \code{microEDA} info slot can be displayed with \code{infoKeys()},
+while filled info fields of a \code{microEDA} object can be displayed with
+\code{infoFields()}.
 }
 \details{
 \code{taxrank}: represents the lowest available taxonomic rank.

@@ -12,6 +12,7 @@ setClass("microEDA",
   slots = list(info = "list"),
 )
 
+.valid_keys <- c("taxrank", "transforms", "filters", "mpa_version", "filtered_taxa")
 
 #' Get or set the info slot from a microEDA object
 #'
@@ -20,6 +21,9 @@ setClass("microEDA",
 #' \linkS4class{microEDA} object.
 #' Additionally, each expected element of the info slot can be retrieved or set
 #' individually.
+#' Valid keys for the `microEDA` info slot can be displayed with `infoKeys()`,
+#' while filled info fields of a `microEDA` object can be displayed with
+#' `infoFields()`.
 #'
 #' @param object A \linkS4class{microEDA} object.
 #' @param value Only used in replacement methods (setters).
@@ -33,6 +37,8 @@ setClass("microEDA",
 #'  }
 #' @return \describe{
 #'  \item{For `info()`: }{A `list` containing metadata.}
+#'  \item{For `infoKeys()`: }{Lists valid keys for `microEDA` info slot.}
+#'  \item{For `infoFields()`: }{Lists available field(s) in `object` info slot.}
 #'  \item{For `taxrank()`: }{A `character` string with the lowest taxonomic rank.}
 #'  \item{For `transforms()`: }{A `character` vector of applied transformations.}
 #'  \item{For `mpa_version()`: }{A `character` string with the used the MetaPhlAn database version.}
@@ -72,18 +78,38 @@ setMethod(
 setGeneric("info<-", function(object, value) standardGeneric("info<-"))
 
 setMethod("info<-", "microEDA", function(object, value) {
-  valid_keys <- c("taxrank", "transforms", "filters", "mpa_version", "filtered_taxa")
   if (!is.list(value)) stop("'info' must be a named list.")
 
-  if (any(!names(value) %in% valid_keys)) {
-    invalid <- names(value)[!names(value) %in% valid_keys]
+  if (any(!names(value) %in% .valid_keys)) {
+    invalid <- names(value)[!names(value) %in% .valid_keys]
     warning(
       "Unknown metadata added to 'info': ", paste(invalid, collapse = ", "),
-      ". Expected keys are: ", paste(valid_keys, collapse = ", ")
+      ". Expected keys are: ", paste(.valid_keys, collapse = ", ")
     )
   }
   object@info <- value
   return(object)
+})
+
+
+#' @rdname info-accessors
+#' @export
+infoKeys <- function() {
+  message(
+    "Expected keys for 'microEDA' info slot are: ", paste(.valid_keys, collapse = ", ")
+  )
+}
+
+#' @rdname info-accessors
+#' @aliases infoFields,microEDA-method
+#' @export
+setGeneric("infoFields", function(object) standardGeneric("infoFields"))
+setMethod("infoFields", "microEDA", function(object) {
+  fields <- names(object@info)[!vapply(object@info, is.null, logical(1L))]
+  message(
+    "Available field(s) in '", deparse(substitute(object)), "' info slot are: ",
+    paste(fields, collapse = ", ")
+  )
 })
 
 
@@ -201,7 +227,7 @@ setMethod("filters<-", "microEDA", function(object, value) {
   if (!.is_proportion(abund_table)) {
     transforms <- NULL
   } else {
-    transforms <- "relabund"
+    transforms <- "TSS"
   }
 
   if (is.null(metadata)) {
@@ -451,7 +477,7 @@ setMethod("filters<-", "microEDA", function(object, value) {
   if (!.is_proportion(abund_table, silent = TRUE)) {
     transforms <- NULL
   } else {
-    transforms <- "relabund"
+    transforms <- "TSS"
   }
 
   microbiome_exp <- new(
