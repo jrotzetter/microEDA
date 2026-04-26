@@ -56,7 +56,7 @@ test_that("microEDA constructor works with metaphlanProfile object", {
 
   expect_equal(me@info$taxrank, "Phylum")
   expect_equal(me@info$mpa_version, "#mpa_test_v1.0")
-  expect_equal(me@info$transforms, "relabund")
+  expect_equal(me@info$transforms, "TSS")
 })
 
 
@@ -181,10 +181,10 @@ test_that("info slot is properly initialized", {
   expect_type(slot(me, "info"), "list")
 
   # Check we can add information to the info slot
-  me@info$transforms <- c("log", "relabund")
+  me@info$transforms <- c("log", "TSS")
 
   expect_equal(me@info$taxrank, "Class")
-  expect_equal(me@info$transforms, c("log", "relabund"))
+  expect_equal(me@info$transforms, c("log", "TSS"))
 })
 
 

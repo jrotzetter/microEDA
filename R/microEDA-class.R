@@ -12,6 +12,101 @@ setClass("microEDA",
   slots = list(info = "list"),
 )
 
+
+#### microEDA replacement methods for phyloseq slots ####
+# Implemented to preserve the microEDA class instead of coercing to phyloseq
+### //////////////////////////////////////////////////////////////////////////###
+#' Replace OTU table in a microEDA object
+#'
+#' @param x A `microEDA` object.
+#' @param value An `otu_table` object (or coercible to one).
+#' @return The updated `microEDA` object.
+#' @method otu_table<- microEDA
+#' @aliases otu_table<-,microEDA,otu_table-method
+#' @importFrom phyloseq otu_table<-
+#' @export
+setMethod(
+  "otu_table<-", c("microEDA", "otu_table"),
+  function(x, value) {
+    if (!is(value, "otu_table")) {
+      value <- as(value, "otu_table")
+    }
+    x@otu_table <- value
+    validObject(x)
+    x
+  }
+)
+
+
+#' Replace taxonomic table in a microEDA object
+#'
+#' @param x A `microEDA` object.
+#' @param value A `taxonomyTable` object (or coercible to one).
+#' @return The updated `microEDA` object.
+#' @method tax_table<- microEDA
+#' @aliases tax_table<-,microEDA,taxonomyTable-method
+#' @importFrom phyloseq tax_table<-
+#' @export
+setMethod(
+  "tax_table<-", c("microEDA", "taxonomyTable"),
+  function(x, value) {
+    if (!is(value, "taxonomyTable")) {
+      value <- as(value, "taxonomyTable")
+    }
+    x@tax_table <- value
+    validObject(x)
+    x
+  }
+)
+
+
+#' Replace sample data in a microEDA object
+#'
+#' @param x A `microEDA` object.
+#' @param value A `sample_data` object (or coercible to one).
+#' @return The updated `microEDA` object.
+#' @method sample_data<- microEDA
+#' @aliases sample_data<-,microEDA,sample_data-method
+#' @importFrom phyloseq sample_data
+setGeneric("sample_data<-", function(x, value) standardGeneric("sample_data<-"))
+#' @export
+setMethod(
+  "sample_data<-", c("microEDA", "sample_data"),
+  function(x, value) {
+    if (!is(value, "sample_data")) {
+      value <- as(value, "sample_data")
+    }
+    x@sam_data <- value
+    validObject(x)
+    x
+  }
+)
+
+
+#' Replace phylogenetic tree in a microEDA object
+#'
+#' @param x A `microEDA` object.
+#' @param value A `phylo` object.
+#' @return The updated `microEDA` object.
+#' @method phy_tree<- microEDA
+#' @aliases phy_tree<-,microEDA,phylo-method
+#' @importFrom phyloseq phy_tree<-
+#' @export
+setMethod(
+  "phy_tree<-", c("microEDA", "phylo"),
+  function(x, value) {
+    if (!is(value, "phylo")) {
+      stop("value must be a phylo object")
+    }
+    x@phy_tree <- value
+    validObject(x)
+    x
+  }
+)
+
+
+#### microEDA methods for info slot ####
+### //////////////////////////////////////////////////////////////////////////###
 .valid_keys <- c("taxrank", "transforms", "filters", "mpa_version", "filtered_taxa")
 
 #' Get or set the info slot from a microEDA object
@@ -197,8 +292,10 @@ setMethod("filters<-", "microEDA", function(object, value) {
   validObject(object)
   object
 })
-### //////////////////////////////////////////////////////////////////////// ###
+
+
 #### Methods for MetaPhlAn profiles ####
+### //////////////////////////////////////////////////////////////////////// ###
 
 #' Constructor for microEDA objects from MetaPhlAn profiles
 #'
@@ -217,14 +314,14 @@ setMethod("filters<-", "microEDA", function(object, value) {
 .metaphlanConstructor <- function(tax_profile, metadata = NULL, sample_column = NULL) {
   stopifnot(inherits(tax_profile, "metaphlanProfile"))
 
-  tax_table <- .mpa_prepare_tax_tab(tax_profile@mpa_taxProfile)
-  abund_table <- .mpa_prepare_abundance_tab(tax_profile@mpa_taxProfile, tax_table)
+  tax_tab <- .mpa_prepare_tax_tab(tax_profile@mpa_taxProfile)
+  abund_tab <- .mpa_prepare_abundance_tab(tax_profile@mpa_taxProfile, tax_tab)
   # Drop no longer needed clade_name column
-  tax_table <- tax_table[, !colnames(tax_table) %in% c("clade_name")]
+  tax_tab <- tax_tab[, !colnames(tax_tab) %in% c("clade_name")]
 
-  if (any(abund_table < 0, na.rm = TRUE)) .show_error("OTU table contains negative values.")
+  if (any(abund_tab < 0, na.rm = TRUE)) .show_error("OTU table contains negative values.")
 
-  if (!.is_proportion(abund_table)) {
+  if (!.is_proportion(abund_tab)) {
     transforms <- NULL
   } else {
     transforms <- "TSS"
@@ -233,13 +330,13 @@ setMethod("filters<-", "microEDA", function(object, value) {
   if (is.null(metadata)) {
     microbiome_exp <- new(
       "microEDA",
-      otu_table = phyloseq::otu_table(abund_table, taxa_are_rows = TRUE),
-      tax_table = phyloseq::tax_table(tax_table),
+      otu_table = phyloseq::otu_table(abund_tab, taxa_are_rows = TRUE),
+      tax_table = phyloseq::tax_table(tax_tab),
       sam_data = NULL,
       phy_tree = NULL,
       refseq = NULL,
       info = list(
-        taxrank = tail(colnames(tax_table), n = 1),
+        taxrank = tail(colnames(tax_tab), n = 1),
         transforms = transforms,
         mpa_version = tax_profile@mpa_version
       )
@@ -253,13 +350,13 @@ setMethod("filters<-", "microEDA", function(object, value) {
 
     microbiome_exp <- new(
       "microEDA",
-      otu_table = phyloseq::otu_table(abund_table, taxa_are_rows = TRUE),
-      tax_table = phyloseq::tax_table(tax_table),
+      otu_table = phyloseq::otu_table(abund_tab, taxa_are_rows = TRUE),
+      tax_table = phyloseq::tax_table(tax_tab),
       sam_data = phyloseq::sample_data(metadata),
       phy_tree = NULL,
       refseq = NULL,
       info = list(
-        taxrank = tail(colnames(tax_table), n = 1),
+        taxrank = tail(colnames(tax_tab), n = 1),
         transforms = transforms,
         mpa_version = tax_profile@mpa_version
       )
@@ -272,13 +369,13 @@ setMethod("filters<-", "microEDA", function(object, value) {
 
     microbiome_exp <- new(
       "microEDA",
-      otu_table = phyloseq::otu_table(abund_table, taxa_are_rows = TRUE),
-      tax_table = phyloseq::tax_table(tax_table),
+      otu_table = phyloseq::otu_table(abund_tab, taxa_are_rows = TRUE),
+      tax_table = phyloseq::tax_table(tax_tab),
       sam_data = NULL,
       phy_tree = NULL,
       refseq = NULL,
       info = list(
-        taxrank = tail(colnames(tax_table), n = 1),
+        taxrank = tail(colnames(tax_tab), n = 1),
         transforms = transforms,
         mpa_version = tax_profile@mpa_version
       )
@@ -407,8 +504,8 @@ setMethod("filters<-", "microEDA", function(object, value) {
 }
 
 
-### //////////////////////////////////////////////////////////////////////// ###
 #### Methods for phyloseq objects ####
+### //////////////////////////////////////////////////////////////////////// ###
 
 #' Constructor for microEDA objects from a phyloseq object
 #'
@@ -427,17 +524,17 @@ setMethod("filters<-", "microEDA", function(object, value) {
 .phyloseqConstructor <- function(tax_profile, metadata = NULL, sample_column = NULL) {
   stopifnot(inherits(tax_profile, "phyloseq"))
 
-  abund_table <- phyloseq::otu_table(tax_profile)
-  tax_table <- tax_profile@tax_table
+  abund_tab <- phyloseq::otu_table(tax_profile)
+  tax_tab <- tax_profile@tax_table
 
   # Ensure abundance table is in expected orientation
-  if (!phyloseq::taxa_are_rows(abund_table)) {
-    abund_table <- phyloseq::t(abund_table)
+  if (!phyloseq::taxa_are_rows(abund_tab)) {
+    abund_tab <- phyloseq::t(abund_tab)
   }
 
-  if (any(abund_table < 0, na.rm = TRUE)) .show_error("OTU table contains negative values.")
+  if (any(abund_tab < 0, na.rm = TRUE)) .show_error("OTU table contains negative values.")
 
-  if (is.null(tax_table)) .show_error('The "tax_table" slot must not be empty for "phyloseq" objects.')
+  if (is.null(tax_tab)) .show_error('The "tax_table" slot must not be empty for "phyloseq" objects.')
 
   if (!is.null(sample_column) && is.null(metadata)) .show_error('"metadata" must be provided when "sample_column" is specified to add metadata.')
 
@@ -474,7 +571,7 @@ setMethod("filters<-", "microEDA", function(object, value) {
   # Make sure no reserved column names are in the metadata
   metadata <- .check_var_names(metadata)
 
-  if (!.is_proportion(abund_table, silent = TRUE)) {
+  if (!.is_proportion(abund_tab, silent = TRUE)) {
     transforms <- NULL
   } else {
     transforms <- "TSS"
@@ -482,13 +579,13 @@ setMethod("filters<-", "microEDA", function(object, value) {
 
   microbiome_exp <- new(
     "microEDA",
-    otu_table = abund_table,
-    tax_table = tax_table,
+    otu_table = abund_tab,
+    tax_table = tax_tab,
     sam_data = metadata,
     phy_tree = tax_profile@phy_tree,
     refseq = tax_profile@refseq,
     info = list(
-      taxrank = tail(colnames(tax_table), n = 1),
+      taxrank = tail(colnames(tax_tab), n = 1),
       transforms = transforms
     )
   )

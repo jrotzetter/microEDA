@@ -193,7 +193,7 @@
 #' filtered features.
 #'
 #' @param me A `microEDA` or `phyloseq` object containing microbiome abundance data and associated metadata.
-#' @param group_var (optional) Name of the sample metadata variable to define groups
+#' @param group_var (Optional) Name of the sample metadata variable to define groups
 #'   for stratified filtering. If `NULL`, filtering is applied across all samples.
 #' @param min_abundance `Numeric` value. Minimum abundance threshold for a feature to be retained.
 #'   Must be non-negative. Features with abundance below this are considered absent.

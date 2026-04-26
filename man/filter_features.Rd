@@ -23,7 +23,7 @@ Must be non-negative. Features with abundance below this are considered absent.}
 \item{min_prevalence}{\code{Numeric} value. Minimum prevalence required for retention.
 If value is < 1, interpreted as proportion of samples; otherwise, as absolute number of samples.}
 
-\item{group_var}{(optional) Name of the sample metadata variable to define groups
+\item{group_var}{(Optional) Name of the sample metadata variable to define groups
 for stratified filtering. If \code{NULL}, filtering is applied across all samples.}
 
 \item{abundance_criterion}{\code{Character} string. Criterion to use for filtering:
