@@ -51,14 +51,12 @@ especially on large datasets, due to efficient use of vectorized operations.
 Benchmarks show speedups of over 100x compared to \code{tax_glom}.
 }
 \examples{
-\dontrun{
 # Example with a phyloseq object
 data("GlobalPatterns", package = "phyloseq")
 agglom <- agglomerate_taxa(GlobalPatterns,
-  tax_rank = "Family",
+  tax_rank = "Phylum",
   rm_missing = TRUE, transform = "TSS",
   add_prefix = TRUE
 )
-print(agglom)
-}
+agglom
 }

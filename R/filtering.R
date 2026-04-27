@@ -94,7 +94,7 @@
   } else {
     # Grouped filtering
     df_long <- tidyr::pivot_longer(x,
-      cols = all_of(names(abund_data)),
+      cols = dplyr::all_of(names(abund_data)),
       names_to = "Sample", values_to = "Abundance"
     ) |>
       dplyr::inner_join(metadata, by = "Sample")
@@ -103,29 +103,29 @@
 
     if (abundance_criterion == "prevalence") {
       keep <- df_long |>
-        dplyr::group_by(.data[[group_var]], tax_ID) |>
+        dplyr::group_by(.data[[group_var]], .data$tax_ID) |>
         dplyr::summarise(
-          pass = sum(Abundance >= min_abundance),
+          pass = sum(.data$Abundance >= min_abundance),
           n_samples = dplyr::n(),
           .groups = "drop"
         ) |>
-        dplyr::mutate(min_n = ifelse(min_prevalence >= 1, as.integer(min_prevalence), ceiling(n_samples * min_prevalence))) |>
-        dplyr::group_by(tax_ID) |>
-        dplyr::filter(filter_fn(pass >= min_n)) |>
-        dplyr::pull(tax_ID)
+        dplyr::mutate(min_n = ifelse(min_prevalence >= 1, as.integer(min_prevalence), ceiling(.data$n_samples * min_prevalence))) |>
+        dplyr::group_by(.data$tax_ID) |>
+        dplyr::filter(filter_fn(.data$pass >= .data$min_n)) |>
+        dplyr::pull(.data$tax_ID)
     } else { # "mean"
       keep <- df_long |>
-        dplyr::group_by(.data[[group_var]], tax_ID) |>
+        dplyr::group_by(.data[[group_var]], .data$tax_ID) |>
         dplyr::summarise(
-          avg_abund = mean(Abundance, na.rm = TRUE),
-          pass = sum(Abundance >= min_abundance),
+          avg_abund = mean(.data$Abundance, na.rm = TRUE),
+          pass = sum(.data$Abundance >= min_abundance),
           n_samples = dplyr::n(),
           .groups = "drop"
         ) |>
-        dplyr::mutate(min_n = ifelse(min_prevalence >= 1, as.integer(min_prevalence), ceiling(n_samples * min_prevalence))) |>
-        dplyr::group_by(tax_ID) |>
-        dplyr::filter(filter_fn(avg_abund >= min_abundance & pass >= min_n)) |>
-        dplyr::pull(tax_ID)
+        dplyr::mutate(min_n = ifelse(min_prevalence >= 1, as.integer(min_prevalence), ceiling(.data$n_samples * min_prevalence))) |>
+        dplyr::group_by(.data$tax_ID) |>
+        dplyr::filter(filter_fn(.data$avg_abund >= min_abundance & .data$pass >= .data$min_n)) |>
+        dplyr::pull(.data$tax_ID)
     }
     filtered_taxa <- unique(keep)
   }
@@ -243,6 +243,7 @@
 #' @importFrom tibble rownames_to_column
 #' @importFrom tidyr pivot_longer
 #' @importFrom dplyr n inner_join group_by summarise mutate filter pull
+#' @importFrom rlang .data
 filter_features <- function(me,
                             min_abundance = 0,
                             min_prevalence = 0,
@@ -311,29 +312,29 @@ filter_features <- function(me,
 
     if (abundance_criterion == "prevalence") {
       keep <- df_long |>
-        dplyr::group_by(.data[[group_var]], tax_ID) |>
+        dplyr::group_by(.data[[group_var]], .data$tax_ID) |>
         dplyr::summarise(
-          pass = sum(Abundance >= min_abundance),
+          pass = sum(.data$Abundance >= min_abundance),
           n_samples = dplyr::n(),
           .groups = "drop"
         ) |>
-        dplyr::mutate(min_n = ifelse(min_prevalence >= 1, as.integer(min_prevalence), ceiling(n_samples * min_prevalence))) |>
-        dplyr::group_by(tax_ID) |>
-        dplyr::filter(filter_fn(pass >= min_n)) |>
-        dplyr::pull(tax_ID)
+        dplyr::mutate(min_n = ifelse(min_prevalence >= 1, as.integer(min_prevalence), ceiling(.data$n_samples * min_prevalence))) |>
+        dplyr::group_by(.data$tax_ID) |>
+        dplyr::filter(filter_fn(.data$pass >= .data$min_n)) |>
+        dplyr::pull(.data$tax_ID)
     } else { # "mean"
       keep <- df_long |>
-        dplyr::group_by(.data[[group_var]], tax_ID) |>
+        dplyr::group_by(.data[[group_var]], .data$tax_ID) |>
         dplyr::summarise(
-          avg_abund = mean(Abundance, na.rm = TRUE),
-          pass = sum(Abundance >= min_abundance),
+          avg_abund = mean(.data$Abundance, na.rm = TRUE),
+          pass = sum(.data$Abundance >= min_abundance),
           n_samples = dplyr::n(),
           .groups = "drop"
         ) |>
-        dplyr::mutate(min_n = ifelse(min_prevalence >= 1, as.integer(min_prevalence), ceiling(n_samples * min_prevalence))) |>
-        dplyr::group_by(tax_ID) |>
-        dplyr::filter(filter_fn(avg_abund >= min_abundance & pass >= min_n)) |>
-        dplyr::pull(tax_ID)
+        dplyr::mutate(min_n = ifelse(min_prevalence >= 1, as.integer(min_prevalence), ceiling(.data$n_samples * min_prevalence))) |>
+        dplyr::group_by(.data$tax_ID) |>
+        dplyr::filter(filter_fn(.data$avg_abund >= min_abundance & .data$pass >= .data$min_n)) |>
+        dplyr::pull(.data$tax_ID)
     }
     taxa_to_keep <- unique(keep)
   }

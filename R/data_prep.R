@@ -270,20 +270,7 @@
 
   # Add prefixes if requested
   if (add_prefix) {
-    prefix_map <- c(
-      "Kingdom" = "k__", "Phylum" = "p__", "Class" = "c__",
-      "Order" = "o__", "Family" = "f__", "Genus" = "g__",
-      "Species" = "s__", "Strain" = "t__"
-    )
-    for (rank in names(prefix_map)) {
-      if (rank %in% colnames(tax_mat)) {
-        tax_mat[, rank] <- ifelse(
-          grepl("^k__|p__|c__|o__|f__|g__|s__|t__", tax_mat[, rank]),
-          tax_mat[, rank],
-          paste0(prefix_map[rank], tax_mat[, rank])
-        )
-      }
-    }
+    tax_mat <- .add_taxonomy_prefix(tax_mat)
   }
 
   # Create group ID based on full lineage up to tax_rank
@@ -356,16 +343,14 @@
 #' Benchmarks show speedups of over 100x compared to `tax_glom`.
 #'
 #' @examples
-#' \dontrun{
 #' # Example with a phyloseq object
 #' data("GlobalPatterns", package = "phyloseq")
 #' agglom <- agglomerate_taxa(GlobalPatterns,
-#'   tax_rank = "Family",
+#'   tax_rank = "Phylum",
 #'   rm_missing = TRUE, transform = "TSS",
 #'   add_prefix = TRUE
 #' )
-#' print(agglom)
-#' }
+#' agglom
 #' @export
 agglomerate_taxa <- function(me,
                              tax_rank,
@@ -412,22 +397,7 @@ agglomerate_taxa <- function(me,
 
   # Apply prefixes to all taxonomic ranks if add_prefix = TRUE
   if (add_prefix) {
-    # Define prefix mapping
-    prefix_map <- c(
-      "Kingdom" = "k__", "Phylum" = "p__", "Class" = "c__",
-      "Order" = "o__", "Family" = "f__", "Genus" = "g__",
-      "Species" = "s__", "Strain" = "t__"
-    )
-    for (rank in names(prefix_map)) {
-      if (rank %in% colnames(tax_df)) {
-        # Avoid double-prefixing
-        tax_df[[rank]] <- ifelse(
-          grepl("^k__|p__|c__|o__|f__|g__|s__|t__", tax_df[[rank]]),
-          tax_df[[rank]], # Keep if already prefixed
-          paste0(prefix_map[rank], tax_df[[rank]])
-        )
-      }
-    }
+    tax_df <- .add_taxonomy_prefix(tax_df)
   }
 
   # Add tax_ID for grouping
@@ -435,9 +405,9 @@ agglomerate_taxa <- function(me,
 
   # Check for conflicting higher-level taxonomy
   tax_check <- tax_df |>
-    dplyr::group_by(tax_ID) |>
+    dplyr::group_by(.data$tax_ID) |>
     dplyr::summarise(
-      across(1:all_of(tax_rank),
+      dplyr::across(1:dplyr::all_of(tax_rank),
         ~ dplyr::n_distinct(.x),
         .names = "n_{col}"
       ),
@@ -445,7 +415,7 @@ agglomerate_taxa <- function(me,
     )
 
   # Check if any rank has more than one distinct value per tax_ID
-  conflicts <- dplyr::filter(tax_check, if_any(starts_with("n_"), ~ .x > 1))
+  conflicts <- dplyr::filter(tax_check, dplyr::if_any(dplyr::starts_with("n_"), ~ .x > 1))
 
   if (nrow(conflicts) > 0) {
     warning(
