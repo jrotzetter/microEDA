@@ -39,16 +39,24 @@
 #' Internal function to add rank prefixes (e.g. "g__") to columns in a
 #' taxonomic table.
 #'
-#' @param tax_table A data frame or tibble containing taxonomic classifications.
+#' @param tax_table A data.frame, tibble or matrix containing taxonomic classifications.
 #' @param cols Character vector specifying the column names in `tax_table` to
 #'   which prefixes should be added.
 #' @return The input `tax_table` with rank prefixes added to the specified columns.
+#' @details
+#'  - `.add_taxonomy_prefix()` includes overhead from checking whether
+#'  prefixes already exist using grepl(). While this makes it safer for
+#'  inconsistent or unpredictable input, it comes at a small performance cost.
+#'  If speed is really of concern use  `.add_rank_prefix()`, which is a bit
+#'  faster but less safe as it assumes no prior prefixes or NA being present,
+#'  which could lead to double prefixing, or prefixing of NA.
+#'
 #' @keywords internal
 #' @noRd
 .add_rank_prefix <- function(tax_table, cols) {
   for (tax_rank in cols) {
     prefix <- .tax_ranks[tax_rank]
-    tax_table[[tax_rank]] <- paste0(prefix, "__", tax_table[[tax_rank]])
+    tax_table[, tax_rank] <- paste0(prefix, "__", tax_table[, tax_rank])
   }
   return(tax_table)
 }
