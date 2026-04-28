@@ -65,7 +65,7 @@
     stop("min_prevalence must be non-negative numeric")
   }
 
-  is_numeric <- vapply(x, is.numeric, logical(1))
+  is_numeric <- vapply(x, is.numeric, logical(1L))
   abund_data <- x[is_numeric]
   tax_ids <- x$tax_ID
 
@@ -254,8 +254,8 @@ filter_features <- function(me,
   if (!inherits(me, "microEDA") && !inherits(me, "phyloseq")) {
     stop("'me' must be a microEDA or phyloseq object.")
   }
-  abundance_criterion <- match.arg(abundance_criterion)
-  group_requirement <- match.arg(group_requirement)
+  abundance_criterion <- match.arg(abundance_criterion, choices = c("prevalence", "mean"))
+  group_requirement <- match.arg(group_requirement, choices = c("any", "all"))
 
   # Validate
   if (!is.numeric(min_abundance) || length(min_abundance) != 1 || min_abundance < 0) {
@@ -471,4 +471,102 @@ filter_features <- function(me,
     dimnames = list("Other", colnames(tax))
   )
   list(other_row = other_row, other_tax = other_tax)
+}
+
+
+#' @keywords internal
+#' @noRd
+.filter_threshold <- function(df, threshold, tax_col = "tax_ID") {
+  # Identify numeric columns (sample/abundance columns)
+  sample_cols <- colnames(df)[vapply(df, is.numeric, logical(1L)) & colnames(df) != tax_col]
+
+  # Check if "Other" already exists
+  other_row <- which(df[[tax_col]] == "Other")
+
+  # Remove existing "Other" row if present, save it for reuse
+  if (length(other_row) > 0) {
+    other_data <- df[other_row, , drop = FALSE]
+    df <- df[-other_row, ]
+  } else {
+    other_data <- data.frame(lapply(df, function(x) {
+      if (is.numeric(x)) 0 else ""
+    }), stringsAsFactors = FALSE)
+    other_data[[tax_col]] <- "Other"
+    rownames(other_data) <- "Other"
+  }
+
+  # Find rows below threshold (excluding any previous "Other")
+  # below_thresh <- rowSums(df[sample_cols] < threshold) == length(sample_cols)
+  below_threshold <- apply(df[sample_cols], 1, max, na.rm = TRUE) < threshold
+
+  # Sum abundances into the "Other" row, preserving existing values if present
+  # for (col in sample_cols) {
+  #   other_data[[col]] <- other_data[[col]] + sum(df[below_thresh, col], na.rm = TRUE)
+  # }
+  other_data[sample_cols] <- other_data[sample_cols] + colSums(df[below_threshold, sample_cols], na.rm = TRUE)
+
+  # Remove rows below threshold
+  df <- df[!below_threshold, ]
+
+  # Append "Other" row only if it has non-zero values
+  if (any(other_data[sample_cols] > 0)) {
+    # df <- rbind(df, other_data)
+    df <- dplyr::bind_rows(df, other_data)
+  }
+
+  return(df)
+}
+
+
+#' @details
+#' The function iteratively increases the relative abundance threshold until no
+#' more than `ntaxa` unique taxa remain. Taxa falling below the threshold in
+#' each iteration are aggregated into an "Other" category. Note that the final
+#' abundance of "Other" in any sample may exceed the reported threshold because
+#' it is the sum of multiple individual taxa, each of which had a relative
+#' abundance below the threshold.
+#' @keywords internal
+#' @noRd
+.apply_incrementing_filter <- function(df,
+                                       ntaxa = 30,
+                                       tax_column = "tax_ID",
+                                       initial_threshold = 0,
+                                       increment = 0.5,
+                                       verbose = TRUE) {
+  initial_data <- df
+
+  # Identify sample (abundance) columns
+  sample_cols <- names(df)[vapply(df, is.numeric, logical(1L)) & names(df) != tax_column]
+
+  # Convert to relative abundance (%)
+  rel_data <- df
+  rel_data[sample_cols] <- proportions(as.matrix(df[sample_cols]), margin = 2) * 100
+
+  # Count non-"Other" taxa
+  n_unique_taxa <- length(setdiff(rel_data[[tax_column]], "Other"))
+
+  # Increment threshold until under target ntaxa
+  while (n_unique_taxa > ntaxa) {
+    rel_data <- .filter_threshold(rel_data, initial_threshold, tax_col = tax_column)
+    # Update n_unique_taxa but exclude "Other"
+    n_unique_taxa <- length(setdiff(rel_data[[tax_column]], "Other"))
+    initial_threshold <- initial_threshold + increment
+  }
+
+  # Apply final filter on original data
+  filtered_data <- .filter_threshold(initial_data, initial_threshold, tax_col = tax_column)
+  other_index <- which(filtered_data[[tax_column]] == "Other")
+  if (length(other_index) > 0) {
+    filtered_data[[tax_column]][other_index] <- paste0("Other (<", initial_threshold, "%)")
+  }
+
+  if (verbose && initial_threshold > 0) {
+    message("Taxa below ", initial_threshold, "% relative abundance were merged into 'Other'.")
+  }
+
+  # Return subset data and final 'Other' threshold
+  return(list(
+    data = filtered_data,
+    threshold = if (initial_threshold > 0) initial_threshold else NULL
+  ))
 }
