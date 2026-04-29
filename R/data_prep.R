@@ -530,3 +530,131 @@ agglomerate_taxa <- function(me,
   }
   return(agglomerated_obj)
 }
+
+
+#' Prepare taxonomic profile for plotting
+#'
+#' Aggregates and filters taxa to a manageable number for visualization,
+#' applying abundance and prevalence filters, rank-based agglomeration,
+#' and iterative thresholding to limit the number of displayed taxa.
+#'
+#' @returns A long-format data frame with columns:
+#'  \itemize{
+#'    \item \code{Taxon}: Taxon name, with "Other" labeled by threshold.
+#'    \item \code{Sample}: Sample identifier.
+#'    \item \code{Abundance}: Abundance value.
+#'  }
+#'
+#' @details
+#' Note that the abundance of the "Other" category in the final output may
+#' exceed the effective threshold because it represents the sum of multiple
+#' individual taxa, each of which had relative abundances below the threshold
+#' after initial filtering and agglomeration.
+#' @keywords internal
+#' @noRd
+.prepare_tax_profile <- function(me,
+                                 tax_rank,
+                                 min_abundance = 0,
+                                 min_prevalence = 0,
+                                 ntaxa = 30,
+                                 group_var = NULL,
+                                 abundance_criterion = c("prevalence", "mean"),
+                                 group_requirement = c("any", "all"),
+                                 keep_other = TRUE,
+                                 rm_missing = FALSE,
+                                 transform = c("None", "TSS"),
+                                 add_prefix = FALSE,
+                                 process_taxon = TRUE) {
+  # Input validation
+  if (!inherits(me, "microEDA") && !inherits(me, "phyloseq")) {
+    stop("'me' must be a microEDA or phyloseq object.")
+  }
+
+  abundance_criterion <- match.arg(abundance_criterion, choices = c("prevalence", "mean"))
+  group_requirement <- match.arg(group_requirement, choices = c("any", "all"))
+  transform <- match.arg(transform, choices = c("None", "TSS"))
+
+  if (!tax_rank %in% phyloseq::rank_names(me)) {
+    stop(
+      "Rank '", tax_rank, "' not present in tax_table. Available ranks: ",
+      paste(phyloseq::rank_names(tax_rank), collapse = ", ")
+    )
+  }
+
+  # Check for nonsensical filtering conditions
+  if ((min_abundance == 0) != (min_prevalence == 0)) {
+    stop("One of 'min_abundance' or 'min_prevalence' is zero while the other is not. This may lead to unintended filtering behavior as the zero threshold will pass all values.")
+  }
+
+  if (any(phyloseq::otu_table(me) < 0, na.rm = TRUE)) {
+    stop("Abundance data contains negative values.")
+  }
+
+  me <- filter_features(me,
+    min_abundance = min_abundance,
+    min_prevalence = min_prevalence,
+    group_var = group_var,
+    abundance_criterion = abundance_criterion,
+    group_requirement = group_requirement,
+    keep_other = keep_other
+  )
+
+  me <- agglomerate_taxa(me,
+    tax_rank = tax_rank,
+    rm_missing = rm_missing,
+    transform = transform,
+    add_prefix = add_prefix
+  )
+
+  # Extract OTU table, then append tax_ID column at target rank
+  abund_tab <- as.data.frame(phyloseq::otu_table(me))
+  tax_ids <- as.data.frame(phyloseq::tax_table(me), stringsAsFactors = FALSE)[[tax_rank]]
+  abund_tab <- data.frame(tax_ID = tax_ids, abund_tab, stringsAsFactors = FALSE)
+
+  # Get filtered out taxa for "Other" row (only available for microEDA)
+  if (inherits(me, "microEDA") && !is.null(filtered_taxa(me))) {
+    other_row <- .collapse_other(me)$other_row
+    other_row <- data.frame(tax_ID = "Other", other_row, stringsAsFactors = FALSE)
+
+    # Now append "Other" row to OTU table
+    abund_tab <- rbind(abund_tab, other_row)
+
+    start_threshold <- filters(me)["min_abundance"]
+  } else {
+    start_threshold <- 0
+  }
+
+  # Pass to incrementing filter to reduce ntaxa
+  abund_tab_reduced <- .apply_incrementing_filter(abund_tab,
+    ntaxa = ntaxa,
+    initial_threshold = start_threshold
+  )
+
+  tax_abund <- abund_tab_reduced$data |>
+    dplyr::rename(Taxon = "tax_ID") |>
+    tidyr::pivot_longer(-.data$Taxon, names_to = "Sample", values_to = "Abundance") |>
+    dplyr::arrange(.data$Sample)
+
+  # Process tax_ID for plotting (markdown)
+  if (process_taxon) {
+    tax_abund <- tax_abund |>
+      dplyr::mutate(
+        Taxon = stringi::stri_replace_first_regex(
+          .data$Taxon,
+          "(.*)_unclassified", "Unclassified *$1*"
+        ),
+        Taxon = stringi::stri_replace_first_regex(
+          .data$Taxon,
+          "Unclassified (.*)", "Unclassified *$1*"
+        ),
+        Taxon = stringi::stri_replace_first_regex(
+          .data$Taxon,
+          "^(\\S*)$", "*$1*"
+        ),
+        Taxon = stringi::stri_replace_all_regex(.data$Taxon, "_", " "),
+        Taxon = dplyr::if_else(.data$Taxon == "*Other*", "Other", .data$Taxon),
+        Taxon = dplyr::if_else(.data$Taxon == "*UNCLASSIFIED*", "UNCLASSIFIED", .data$Taxon)
+      )
+  }
+  return(tax_abund)
+}
