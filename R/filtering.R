@@ -518,13 +518,26 @@ filter_features <- function(me,
 }
 
 
+#' Apply Incrementing Relative Abundance Filter
+#'
+#' Iteratively increases a relative abundance threshold until no more than `ntaxa`
+#' taxa remain above the threshold. Taxa below the threshold are merged into an
+#' "Other" category. Works on both count and relative abundance data.
+#'
+#' @param df Data frame with taxonomic IDs and numeric abundance (samples) columns.
+#' @param ntaxa Maximum number of taxa to retain before merging into "Other".
+#' @param tax_column Name of the column containing taxonomic IDs.
+#' @param initial_threshold Starting threshold for relative abundance (%).
+#' @param increment Amount to increase threshold per iteration.
+#' @param verbose Print message with final threshold used.
+#' @return List containing filtered data and final threshold.
 #' @details
 #' The function iteratively increases the relative abundance threshold until no
 #' more than `ntaxa` unique taxa remain. Taxa falling below the threshold in
-#' each iteration are aggregated into an "Other" category. Note that the final
-#' abundance of "Other" in any sample may exceed the reported threshold because
-#' it is the sum of multiple individual taxa, each of which had a relative
-#' abundance below the threshold.
+#' each iteration are aggregated into an "Other" category.
+#' Note that the final abundance of "Other" in any sample may exceed the reported
+#' threshold because it is the sum of multiple individual taxa, each of which had
+#' a relative abundance below the threshold.
 #' @keywords internal
 #' @noRd
 .apply_incrementing_filter <- function(df,
@@ -545,28 +558,51 @@ filter_features <- function(me,
   # Count non-"Other" taxa
   n_unique_taxa <- length(setdiff(rel_data[[tax_column]], "Other"))
 
-  # Increment threshold until under target ntaxa
+  # Iteratively increase threshold until <= ntaxa taxa remain
+  threshold <- initial_threshold
   while (n_unique_taxa > ntaxa) {
-    rel_data <- .filter_threshold(rel_data, initial_threshold, tax_col = tax_column)
+    rel_data <- .filter_threshold(rel_data, threshold = threshold, tax_col = tax_column)
     # Update n_unique_taxa but exclude "Other"
     n_unique_taxa <- length(setdiff(rel_data[[tax_column]], "Other"))
-    initial_threshold <- initial_threshold + increment
+    threshold <- threshold + increment
   }
 
-  # Apply final filter on original data
-  filtered_data <- .filter_threshold(initial_data, initial_threshold, tax_col = tax_column)
+  # Get list of taxa to keep in original data (excluding those merged into
+  # "Other" if present)
+  kept_taxa <- setdiff(rel_data[[tax_column]], "Other")
+
+  # Subset original data to keep only these taxa
+  kept_rows <- initial_data[initial_data[[tax_column]] %in% kept_taxa, ]
+
+  # Only create "Other" if some taxa were excluded
+  if (length(kept_taxa) < length(unique(initial_data[[tax_column]]))) {
+    # Sum abundances of all excluded taxa per sample to create "Other"
+    other_mask <- !initial_data[[tax_column]] %in% kept_taxa
+    other_abund <- colSums(initial_data[other_mask, sample_cols, drop = FALSE], na.rm = TRUE)
+
+    other_row <- data.frame(as.list(other_abund), check.names = FALSE, stringsAsFactors = FALSE)
+    other_row[[tax_column]] <- "Other"
+    rownames(other_row) <- "Other"
+
+    # Combine kept taxa and "Other" row
+    filtered_data <- dplyr::bind_rows(kept_rows, other_row)
+  } else {
+    filtered_data <- kept_rows
+  }
+
+  # Rename "Other" to reflect threshold
   other_index <- which(filtered_data[[tax_column]] == "Other")
   if (length(other_index) > 0) {
-    filtered_data[[tax_column]][other_index] <- paste0("Other (<", initial_threshold, "%)")
+    filtered_data[[tax_column]][other_index] <- paste0("Other (<", threshold, "%)")
   }
 
-  if (verbose && initial_threshold > 0) {
-    message("Taxa below ", initial_threshold, "% relative abundance were merged into 'Other'.")
+  if (verbose && threshold > 0) {
+    message("Taxa below ", threshold, "% relative abundance were merged into 'Other'.")
   }
 
   # Return subset data and final 'Other' threshold
   return(list(
     data = filtered_data,
-    threshold = if (initial_threshold > 0) initial_threshold else NULL
+    threshold = if (threshold > 0) threshold else NULL
   ))
 }
