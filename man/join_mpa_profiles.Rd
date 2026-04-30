@@ -14,7 +14,7 @@ An object of class \code{metaphlanProfile} containing the merged taxonomic profi
 All input profiles must use the same MetaPhlAn database version.
 }
 \description{
-Combines multiple \code{metaphlanProfile} objects into a single profile by joining
+Combines multiple \linkS4class{metaphlanProfile} objects into a single profile by joining
 their taxonomic abundance tables on the \code{clade_name} column.
 }
 \details{
@@ -22,7 +22,7 @@ their taxonomic abundance tables on the \code{clade_name} column.
 \item Non-\code{metaphlanProfile} arguments are silently dropped with a warning.
 \item Profiles from different MetaPhlAn database versions will cause an error.
 \item Numeric suffixes will automatically be added to duplicate samples (e.g. Sample_1 -> Sample_1.1, Sample_1.2).
-\item Missing values (NA) after joining are replaced with 0.0.
+\item Missing values (\code{NA}) after joining are replaced with 0.0.
 }
 }
 \examples{

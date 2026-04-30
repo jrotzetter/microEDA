@@ -1,9 +1,10 @@
-#' A class to represent a MetaPhlAn profile.
+#' A class to represent a MetaPhlAn profile
 #'
 #' This class stores database version information and taxonomic profile data from MetaPhlAn output.
 #'
 #' @slot mpa_version `Character` string indicating the MetaPhlAn database version used.
 #' @slot mpa_taxProfile A `data.frame` containing the taxonomic profile (relative abundances of clades).
+#' @rdname metaphlanProfile-class
 #' @export
 setClass("metaphlanProfile",
   slots = list(mpa_version = "character", mpa_taxProfile = "data.frame"),
@@ -15,6 +16,10 @@ setClass("metaphlanProfile",
 
 
 #' Get or set the MetaPhlAn database version.
+#'
+#' Extracts or updates the MetaPhlAn database version metadata stored in a
+#' \linkS4class{metaphlanProfile} object.
+#' This version string reflects the reference database used during profiling.
 #'
 #' @param object An object of class `metaphlanProfile`.
 #' @param value A `character` string with a new MetaPhlAn database version (used only in assignment).
@@ -47,8 +52,14 @@ setMethod("mpa_version<-", "metaphlanProfile", function(object, value) {
 
 #' Get or set the MetaPhlAn taxonomic profile
 #'
+#' Extracts or updates the core taxonomic abundance data from a
+#' \linkS4class{metaphlanProfile} object.
+#' The taxonomic profile is stored as a `data.frame` containing taxonomic
+#' identifiers (clade_name) and relative abundances per sample.
+#'
 #' @param object An object of class `metaphlanProfile`.
-#' @param value A `data.frame` with a MetaPhlAn taxonomic profile.
+#' @param value A `data.frame` with a MetaPhlAn taxonomic profile. Taxonomic
+#' lineages should be stored in a 'clade_name' column.
 #' @return The taxonomic profile (when getting), or updated `metaphlanProfile` (when setting).
 #' @rdname mpa_taxProfile
 #' @aliases mpa_taxProfile,metaphlanProfile-method
@@ -89,10 +100,10 @@ setMethod(
 )
 
 
-#' Load MetaPhlAn profile
+#' Load a MetaPhlAn taxonomic profile from a file
 #'
-#' @description
-#' Function to load a MetaPhlAn profile from a file path.
+#' Reads a tab-separated MetaPhlAn output file and constructs a \linkS4class{metaphlanProfile} object.
+#' The input file should contain taxonomic abundance data with columns for clade name and sample abundances.
 #'
 #' @param file_path A `character` string containing the path to the file to read.
 #' @importFrom utils read.table
@@ -224,7 +235,7 @@ load_metaphlan <- function(file_path) {
 
 #' Join multiple MetaPhlAn profiles
 #'
-#' Combines multiple `metaphlanProfile` objects into a single profile by joining
+#' Combines multiple \linkS4class{metaphlanProfile} objects into a single profile by joining
 #' their taxonomic abundance tables on the `clade_name` column.
 #'
 #' @param ... Multiple objects of class `metaphlanProfile` to merge.
@@ -236,7 +247,7 @@ load_metaphlan <- function(file_path) {
 #' - Non-`metaphlanProfile` arguments are silently dropped with a warning.
 #' - Profiles from different MetaPhlAn database versions will cause an error.
 #' - Numeric suffixes will automatically be added to duplicate samples (e.g. Sample_1 -> Sample_1.1, Sample_1.2).
-#' - Missing values (NA) after joining are replaced with 0.0.
+#' - Missing values (`NA`) after joining are replaced with 0.0.
 #'
 #' @export
 #'

@@ -1,10 +1,15 @@
 #' A S4 class extending phyloseq for microbiome data analysis
 #'
-#' This class inherits from phyloseq and adds a slot for additional information,
-#' such as lowest taxonomic rank, MetaPhlAn database version, applied
-#' transformations and/or filters.
+#' This class inherits from \code{\link[phyloseq]{phyloseq}} and adds a slot for
+#' additional information, such as lowest taxonomic rank, MetaPhlAn database
+#' version, applied transformations and/or filters.
 #'
-#' @slot info A list containing metadata.
+#' @slot info A `list` containing metadata.
+#' @slot otu_table A `matrix` of class `otu_table` with taxa as rows and samples as columns.
+#' @slot tax_table A named `character matrix` of class `taxonomyTable`, with taxon IDs as row names and taxonomic ranks as columns.
+#' @slot sam_data An object of class `sample_data` containing sample metadata.
+#' @slot phy_tree An object of class `phylo` representing a phylogenetic tree.
+#' @slot refseq An object of a class inheriting from \code{XStringSet-class} (e.g., \code{DNAStringSet}) containing biological sequences. See \code{\link[Biostrings]{XStringSet}}.
 #' @importClassesFrom phyloseq phyloseq
 #' @export
 setClass("microEDA",
@@ -598,14 +603,19 @@ setMethod("filters<-", "microEDA", function(object, value) {
 
 #' Constructor for microEDA objects
 #'
-#' @param tax_profile An object of class "metaphlanProfile" or "phyloseq".
-#' @param metadata Optional data.frame with sample metadata.
+#' @param tax_profile An object of class `metaphlanProfile` or `phyloseq`.
+#' @param metadata Optional `data.frame` with sample metadata.
 #' @param sample_column `Character` string specifying the column name in
 #'  `metadata` that contains sample identifiers (e.g., "Samples").
 #' @return An object of class `microEDA`.
 #' @rdname microEDA-class
 #' @docType methods
 #' @exportMethod microEDA
+#' @details
+#' When passed a \linkS4class{metaphlanProfile}, the profile will be returned at
+#' the lowest available taxonomic rank, which usually is at strain rank. To
+#' agglomerate the profile at a higher rank, please see [`filter_features()`].
+#'
 #'
 #' @examples
 #' data("GlobalPatterns", package = "phyloseq")

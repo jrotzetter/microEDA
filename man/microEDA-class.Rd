@@ -15,9 +15,9 @@ microEDA(tax_profile, metadata = NULL, sample_column = NULL)
 \S4method{microEDA}{phyloseq}(tax_profile, metadata = NULL, sample_column = NULL)
 }
 \arguments{
-\item{tax_profile}{An object of class "metaphlanProfile" or "phyloseq".}
+\item{tax_profile}{An object of class \code{metaphlanProfile} or \code{phyloseq}.}
 
-\item{metadata}{Optional data.frame with sample metadata.}
+\item{metadata}{Optional \code{data.frame} with sample metadata.}
 
 \item{sample_column}{\code{Character} string specifying the column name in
 \code{metadata} that contains sample identifiers (e.g., "Samples").}
@@ -26,14 +26,29 @@ microEDA(tax_profile, metadata = NULL, sample_column = NULL)
 An object of class \code{microEDA}.
 }
 \description{
-This class inherits from phyloseq and adds a slot for additional information,
-such as lowest taxonomic rank, MetaPhlAn database version, applied
-transformations and/or filters.
+This class inherits from \code{\link[phyloseq]{phyloseq}} and adds a slot for
+additional information, such as lowest taxonomic rank, MetaPhlAn database
+version, applied transformations and/or filters.
+}
+\details{
+When passed a \linkS4class{metaphlanProfile}, the profile will be returned at
+the lowest available taxonomic rank, which usually is at strain rank. To
+agglomerate the profile at a higher rank, please see \code{\link[=filter_features]{filter_features()}}.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{info}}{A list containing metadata.}
+\item{\code{info}}{A \code{list} containing metadata.}
+
+\item{\code{otu_table}}{A \code{matrix} of class \code{otu_table} with taxa as rows and samples as columns.}
+
+\item{\code{tax_table}}{A named \verb{character matrix} of class \code{taxonomyTable}, with taxon IDs as row names and taxonomic ranks as columns.}
+
+\item{\code{sam_data}}{An object of class \code{sample_data} containing sample metadata.}
+
+\item{\code{phy_tree}}{An object of class \code{phylo} representing a phylogenetic tree.}
+
+\item{\code{refseq}}{An object of a class inheriting from \code{XStringSet-class} (e.g., \code{DNAStringSet}) containing biological sequences. See \code{\link[Biostrings]{XStringSet}}.}
 }}
 
 \examples{

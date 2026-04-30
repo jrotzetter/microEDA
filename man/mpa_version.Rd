@@ -21,7 +21,9 @@ mpa_version(object) <- value
 The recorded MetaPhlAn database version (when getting), or updated \code{metaphlanProfile} (when setting).
 }
 \description{
-Get or set the MetaPhlAn database version.
+Extracts or updates the MetaPhlAn database version metadata stored in a
+\linkS4class{metaphlanProfile} object.
+This version string reflects the reference database used during profiling.
 }
 \seealso{
 \code{\link{mpa_version,microEDA-method}}

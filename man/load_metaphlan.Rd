@@ -2,7 +2,7 @@
 % Please edit documentation in R/metaphlanProfile-class.R
 \name{load_metaphlan}
 \alias{load_metaphlan}
-\title{Load MetaPhlAn profile}
+\title{Load a MetaPhlAn taxonomic profile from a file}
 \usage{
 load_metaphlan(file_path)
 }
@@ -13,7 +13,8 @@ load_metaphlan(file_path)
 An object of class \code{metaphlanProfile}.
 }
 \description{
-Function to load a MetaPhlAn profile from a file path.
+Reads a tab-separated MetaPhlAn output file and constructs a \linkS4class{metaphlanProfile} object.
+The input file should contain taxonomic abundance data with columns for clade name and sample abundances.
 }
 \examples{
 file_path <- system.file("extdata", "merged_abundance_table.txt", package = "microEDA")

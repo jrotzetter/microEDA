@@ -15,11 +15,15 @@ mpa_taxProfile(object) <- value
 \arguments{
 \item{object}{An object of class \code{metaphlanProfile}.}
 
-\item{value}{A \code{data.frame} with a MetaPhlAn taxonomic profile.}
+\item{value}{A \code{data.frame} with a MetaPhlAn taxonomic profile. Taxonomic
+lineages should be stored in a 'clade_name' column.}
 }
 \value{
 The taxonomic profile (when getting), or updated \code{metaphlanProfile} (when setting).
 }
 \description{
-Get or set the MetaPhlAn taxonomic profile
+Extracts or updates the core taxonomic abundance data from a
+\linkS4class{metaphlanProfile} object.
+The taxonomic profile is stored as a \code{data.frame} containing taxonomic
+identifiers (clade_name) and relative abundances per sample.
 }

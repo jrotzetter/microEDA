@@ -3,7 +3,7 @@
 \docType{class}
 \name{metaphlanProfile-class}
 \alias{metaphlanProfile-class}
-\title{A class to represent a MetaPhlAn profile.}
+\title{A class to represent a MetaPhlAn profile}
 \description{
 This class stores database version information and taxonomic profile data from MetaPhlAn output.
 }
