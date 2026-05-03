@@ -289,3 +289,143 @@
   # If no metadata the above will simply return NULL
   length(metadata) > 0
 }
+
+
+#' Check Taxonomic Consistency Across Higher-Level Classifications
+#'
+#' Verifies that each taxon at a specified rank has a consistent higher-level
+#' taxonomic path (e.g., all features labeled as the same genus belong to the
+#' same family, order, etc.).
+#' Useful for identifying inconsistencies (from, e.g., different database versions)
+#' in taxonomic annotations within microbiome datasets.
+#'
+#' @param me A `microEDA` or `phyloseq` object, or a `data.frame/matrix` where rows
+#'   represent taxa and columns represent taxonomic ranks (e.g., Kingdom, Phylum,
+#'   Class, etc.).
+#' @param tax_rank `Character` string specifying the taxonomic rank at which to
+#'   check consistency (e.g., "Genus", "Family"). If `NULL`, defaults to the
+#'   lowest (last) taxonomic rank present in the data.
+#' @param detailed_report `Logical`. If `TRUE`, provides a detailed report showing
+#'   at which higher taxonomic levels inconsistencies occur. If `FALSE`, only
+#'   returns the names of inconsistent taxa.
+#'
+#' @return Invisibly returns one of the following:
+#'   \itemize{
+#'     \item `NULL` if no inconsistencies are found.
+#'     \item A `character` vector of inconsistent taxon names if `detailed_report = FALSE`.
+#'     \item A `tibble` with detailed per-rank inconsistency flags if
+#'           `detailed_report = TRUE` and inconsistencies exist.
+#'   }
+#'   To use the return value, assign the function call to a variable (e.g.,
+#'   \code{result <- check_taxonomic_consistency(me, detailed_report = TRUE)}).
+#'
+#' @details
+#' The function constructs a "clade lineage" by concatenating all taxonomic ranks up to
+#' the specified `tax_rank`. It then groups by the `tax_rank` value and checks whether
+#' multiple clade paths exist for the same taxon at that rank. If so, a warning is issued.
+#'
+#' When `detailed_report = TRUE`, the function performs additional analysis to
+#' identify exactly which higher ranks differ for each inconsistent taxon.
+#'
+#' @examples
+#' # Example using a simple data frame
+#' tax_data <- data.frame(
+#'   Kingdom = rep("Bacteria", 4),
+#'   Phylum = c("Firmicutes", "Firmicutes", "Proteobacteria", "Firmicutes"),
+#'   Class = c("Bacilli", "Bacilli", "Gammaproteobacteria", "Bacilli"),
+#'   Genus = c("Lactobacillus", "Lactobacillus", "Escherichia", "Lactobacillus")
+#' )
+#'
+#' # Check consistency at Genus level
+#' check_taxonomic_consistency(tax_data, tax_rank = "Genus")
+#' @importFrom rlang .data
+#' @export
+check_taxonomic_consistency <- function(me, tax_rank = NULL, detailed_report = TRUE) {
+  # Input validation
+  if (inherits(me, "microEDA") || inherits(me, "phyloseq")) {
+    tax_df <- as.data.frame(phyloseq::tax_table(me))
+  } else if (is.data.frame(me) || is.matrix(me)) {
+    tax_df <- as.data.frame(me)
+  } else {
+    stop("'me' must be a microEDA, phyloseq, data.frame, or matrix object.")
+  }
+
+  # Default to lowest (last) taxonomic rank if not specified
+  if (is.null(tax_rank)) {
+    rank_names <- colnames(tax_df)
+    tax_rank <- rank_names[length(rank_names)]
+  } else {
+    tax_rank <- .get_full_tax_rank(tax_rank) # In case it was abbreviated
+  }
+
+  # Ensure rank exists
+  if (!(tax_rank %in% colnames(tax_df))) {
+    stop("Taxonomic rank '", tax_rank, "' not found in tax_table.")
+  }
+
+  ranks_up_to <- names(tax_df)[1:which(names(tax_df) == tax_rank)]
+
+  # Create full clade path
+  tax_df <- tidyr::unite(
+    tax_df,
+    "clade_name",
+    dplyr::all_of(ranks_up_to),
+    sep = ";",
+    remove = FALSE
+  )
+
+  # Group by target rank and check for multiple clade paths
+  inconsistencies <- tax_df |>
+    dplyr::group_by(.data[[tax_rank]]) |>
+    dplyr::mutate(all_same = dplyr::n_distinct(.data$clade_name) == 1) |>
+    dplyr::filter(!.data$all_same) |>
+    dplyr::distinct(.data$clade_name, .keep_all = TRUE) |>
+    dplyr::ungroup()
+
+  if (nrow(inconsistencies) == 0) {
+    message("No taxonomic inconsistencies detected at rank '", tax_rank, "'.")
+    return(invisible(NULL))
+  }
+
+  inconsistent_taxa <- dplyr::pull(inconsistencies, .data[[tax_rank]]) |> unique()
+  n_inconsistent <- length(inconsistent_taxa)
+  taxon_label <- if (n_inconsistent == 1) "taxon" else "taxa"
+
+  # Temporarily enable immediate warning print so it appears before detailed_report
+  old_warn <- options(warn = 1)
+  on.exit(options(old_warn), add = TRUE)
+
+  warning(
+    "Conflicting taxonomy for ", n_inconsistent, " ", taxon_label,
+    " at rank '", tax_rank, "'. Inconsistent higher-level classification",
+    if (n_inconsistent > 1) "s", " detected for:\n",
+    toString(inconsistent_taxa),
+    call. = FALSE
+  )
+
+  # Enhanced diagnostic: see at which ranks taxonomic inconsistencies were found
+  # for a taxon
+  if (detailed_report && nrow(inconsistencies) > 0) {
+    detailed_differences <- inconsistencies |>
+      dplyr::group_by(.data[[tax_rank]]) |>
+      dplyr::summarise(
+        dplyr::across(
+          dplyr::any_of(ranks_up_to),
+          ~ dplyr::n_distinct(.x) > 1,
+          .names = "differs_in_{col}"
+        ),
+        .groups = "drop"
+      ) |>
+      dplyr::filter(dplyr::if_any(dplyr::starts_with("differs_in_"), ~ .x == TRUE))
+
+    # Print detailed differences
+    if (nrow(detailed_differences) > 0) {
+      message("Detailed differences (TRUE = inconsistent rank):")
+      print(detailed_differences)
+      # Return detailed info for further inspection if too many rows
+      return(invisible(detailed_differences))
+    }
+  }
+  # Otherwise return just the names of inconsistent taxa
+  return(invisible(inconsistent_taxa))
+}
