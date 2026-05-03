@@ -68,7 +68,8 @@
 #' to their full names (e.g., "Phylum", "Genus").
 #'
 #' @param tax_rank `Character` vector with abbreviated or lowercase taxonomic rank name.
-#' @return `Character` vector with the full rank name (e.g., "Family").
+#' @return `Character` vector with the full rank name (e.g., "Family") or the
+#' input vector if tax_rank does not map to valid taxonomic ranks.
 #' @keywords internal
 #' @noRd
 .get_full_tax_rank <- function(tax_rank) {
@@ -90,5 +91,9 @@
     "species" = "Species",
     "strain" = "Strain"
   )
-  tax_rank <- unname(lookup[tolower(tax_rank)])
+  result <- lookup[tolower(tax_rank)]
+  if (is.na(result)) {
+    return(tax_rank)
+  }
+  unname(result)
 }
