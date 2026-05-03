@@ -14,7 +14,8 @@ microEDA](https://img.shields.io/github/issues/jrotzetter/microEDA)](https://git
 R](https://img.shields.io/badge/R-4.5.3-blue?logo=r&logoColor=white)](https://cran.r-project.org/ "Go to CRAN homepage")
 [![Made with
 R](https://img.shields.io/badge/RStudio-2026.01.1_Build_403-blue?logo=rstudio&logoColor=white)](https://posit.co/products/open-source/rstudio/ "Go to RSTUDIO IDE homepage")
-
+[![Project Status:
+WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 <!-- badges: end -->
 
 ## Overview
@@ -28,13 +29,6 @@ You can install the development version of microEDA from
 [GitHub](https://github.com/jrotzetter/microEDA) with:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("jrotzetter/microEDA", build_vignettes = TRUE)
-```
-
-Alternatively you can also use the `pak` package:
-
-``` r
 # install.packages("pak")
 pak::pak("jrotzetter/microEDA")
 ```
@@ -45,6 +39,23 @@ Or the `remotes` package:
 # install.packages("remotes")
 remotes::install_github("jrotzetter/microEDA", build_vignettes = TRUE)
 ```
+
+## Currently implemented features
+
+- `microEDA()` class extending phyloseq to hold additional information.
+- Load and join MetaPhlAn profiles with `load_metaphlan()` and
+  `join_mpa_profiles()`.
+- `filter_features()` by abundance and prevalence. Filtering can be
+  applied globally or within groups (stratified) defined by a metadata
+  variable.
+- Aggregate taxa of the same taxonomy at specific taxonomic ranks with
+  `agglomerate_taxa()`. This implementation is significantly faster than
+  phyloseq::tax_glom.
+- Functions to easily trim or add taxonomic prefixes to a taxonomyTable.
+- `to_phyloseq()` to convert `metaphlanProfile` and `microEDA` objects
+  into a `phyloseq` object.
+- Check for taxonomic inconsistencies within a taxonomyTable with
+  `check_taxonomic_consistency()`
 
 ## Planned features
 
