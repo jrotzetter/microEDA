@@ -362,6 +362,8 @@ agglomerate_taxa <- function(me,
     stop("'me' must be a microEDA or phyloseq object.")
   }
 
+  tax_rank <- .get_full_tax_rank(tax_rank) # In case it was abbreviated
+
   transform <- match.arg(transform, choices = c("None", "TSS"))
 
   # Extract data using phyloseq accessors
@@ -417,14 +419,16 @@ agglomerate_taxa <- function(me,
   # Check if any rank has more than one distinct value per tax_ID
   conflicts <- dplyr::filter(tax_check, dplyr::if_any(dplyr::starts_with("n_"), ~ .x > 1))
 
-  if (nrow(conflicts) > 0) {
+  n_inconsistent <- nrow(conflicts)
+  taxon_label <- if (n_inconsistent == 1) "taxon" else "taxa"
+
+  if (n_inconsistent > 0) {
     warning(
-      "Conflicting taxonomy detected for ",
-      nrow(conflicts),
-      " tax_ID(s). Some taxa grouped at '",
-      tax_rank,
-      "' have inconsistent higher-level classifications. These are:\n",
-      toString(conflicts$tax_ID)
+      "Conflicting taxonomy for ", n_inconsistent, " ", taxon_label,
+      " at rank '", tax_rank, "'. Inconsistent higher-level classification",
+      if (n_inconsistent > 1) "s", " detected for:\n",
+      toString(conflicts$tax_ID),
+      call. = FALSE
     )
   }
 
@@ -657,4 +661,31 @@ agglomerate_taxa <- function(me,
       )
   }
   return(tax_abund)
+}
+
+
+#' Recode values in a data frame column using named replacements
+#'
+#' This internal function renames values in a specified column of a data frame
+#' based on a named list of replacements. It uses `dplyr::recode()` with splicing
+#' (`!!!`) to apply the mapping.
+#'
+#' @param df A `data.frame`.
+#' @param column A `character` string specifying the name of the column to modify.
+#' @param values A named `list` or named `vector` where names are old values and values are new values.
+#'
+#' @return The input data frame with the specified column's values renamed according to `values`.
+#'
+#' @examples
+#' df <- data.frame(x = c("a", "b", "c"))
+#' new_vals <- list(a = "Alfa", b = "Bravo", c = "Charlie")
+#' .rename_values(df, "x", new_vals)
+#'
+#' @keywords internal
+#' @noRd
+.rename_values <- function(df, column, values) {
+  col <- df[[column]]
+  col_new <- dplyr::recode(col, !!!values)
+  df[[column]] <- col_new
+  return(df)
 }
