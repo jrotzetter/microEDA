@@ -22,7 +22,8 @@ agglomerate_taxa(
 at the specified rank. If \code{FALSE}, fills missing values using lineage context.}
 
 \item{transform}{\code{Character.} Transformation to apply to abundances after agglomeration.
-One of \code{"None"} (no transformation) or \code{"TSS"} (Total Sum Scaling to relative abundance).}
+One of \code{"None"} (no transformation) or \code{"TSS"} (Total Sum Scaling to relative abundance).
+If \code{filtered_taxa} are present in a \code{microEDA} object, they will be included in the transformation calculation.}
 
 \item{add_prefix}{\code{Logical}. If \code{TRUE}, adds QIIME-style prefixes (e.g., \code{k__}, \code{p__})
 to taxonomic labels.}

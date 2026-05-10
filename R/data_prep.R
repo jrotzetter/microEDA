@@ -222,6 +222,93 @@
 }
 
 
+#' Apply Data Transformation to Abundance Matrix
+#'
+#' Internal function to apply normalisations or transformations such as
+#' Total Sum Scaling (TSS) to the OTU table of a phyloseq-like object. Optionally
+#' integrates and transforms an auxiliary matrix of filtered taxa if present.
+#'
+#' The function combines the main OTU table with the filtered taxa matrix
+#' (if available in a `microEDA` object) by aligning on shared samples. It then
+#' applies the specified transformation (e.g., TSS for relative abundance). After
+#' transformation, the matrix is split back into original components, row names
+#' are restored, and the transformed matrices are reassigned. The transformation
+#' type is stored in a microEDA's metadata.
+#' @param me A `microEDA` or `phyloseq` object.
+#' @param transform `Character` string specifying the transformation. One of:
+#'  `"None"`, `"TSS"`.
+#'
+#' @return The modified object `me` with transformed abundance matrices and updated
+#'  transformation metadata.
+#' @details
+#' - TSS Transformation: Scales counts per sample to sum to a constant
+#'  (e.g., relative abundance x 100). Implemented via internal `.apply_tss` function.
+#' - Filtered Taxa Integration: Only performed if `inherits(me, "microEDA")` and
+#' `filtered_taxa(me)$filtered_otu` exists. Matrices are merged row-wise,
+#'  transformed, then split back using stored dimensions.
+#' - Column Alignment: Only samples present in both matrices are used. An error
+#'  is thrown if no common columns exist.
+#'
+#' @keywords internal
+#' @noRd
+.apply_transformation <- function(me, transform = c("None", "TSS")) {
+  transform <- match.arg(transform, choices = c("None", "TSS"))
+
+  abund_mat <- as(phyloseq::otu_table(me), "matrix")
+
+  abund_rows <- rownames(abund_mat)
+  n_abund <- nrow(abund_mat)
+
+  if (inherits(me, "microEDA")) {
+    other_mat <- filtered_taxa(me)$filtered_otu
+    if (!is.null(other_mat)) {
+      # Find common columns
+      common_cols <- intersect(colnames(abund_mat), colnames(other_mat))
+
+      if (length(common_cols) == 0) {
+        stop("No common columns between 'otu_table' and 'filtered_taxa'.")
+      }
+
+      # Subset both matrices to shared columns
+      abund_mat <- abund_mat[, common_cols, drop = FALSE]
+      other_mat <- other_mat[, common_cols, drop = FALSE]
+
+      other_rows <- rownames(other_mat)
+      n_other <- nrow(other_mat)
+
+      # Combine
+      abund_mat <- rbind(abund_mat, other_mat)
+    }
+  }
+  # Apply transformation
+  switch(transform,
+    None = return(me),
+    TSS = {
+      abund_mat <- .apply_tss(abund_mat, presence_threshold = 0, prop_scale = 100)
+    }
+  )
+
+  # Split back
+  if (inherits(me, "microEDA") && !is.null(other_mat)) {
+    abund_mat_out <- abund_mat[seq_len(n_abund), , drop = FALSE]
+    other_mat_out <- abund_mat[seq_len(n_other) + n_abund, , drop = FALSE]
+
+    # Restore row names
+    rownames(abund_mat_out) <- abund_rows
+    rownames(other_mat_out) <- other_rows
+
+    filtered_taxa(me)$filtered_otu <- other_mat_out
+  } else {
+    abund_mat_out <- abund_mat
+  }
+
+  otu_table(me) <- otu_table(abund_mat_out, taxa_are_rows = TRUE)
+  if (inherits(me, "microEDA")) transforms(me) <- transform
+
+  return(me)
+}
+
+
 #' Agglomerate filtered_taxa in microEDA info slot
 #'
 #' @keywords internal
@@ -229,7 +316,6 @@
 .agglomerate_filtered_taxa <- function(data_list,
                                        tax_rank,
                                        rm_missing = FALSE,
-                                       transform = c("None", "TSS"),
                                        add_prefix = FALSE) {
   # Input validation
   if (!is.list(data_list) || !all(c("filtered_otu", "filtered_tax") %in% names(data_list))) {
@@ -255,7 +341,6 @@
     stop("Selected taxonomic rank '", tax_rank, "' not found in filtered_tax.")
   }
 
-  transform <- match.arg(transform, choices = c("None", "TSS"))
   rank_index <- which(colnames(tax_mat) == tax_rank)
 
   # Handle missing values
@@ -282,11 +367,6 @@
 
   # Agglomerate abundances
   aggregated <- rowsum(as.matrix(otu_mat), group = tax_df$tax_ID, reorder = FALSE)
-
-  # Apply TSS if requested
-  if (transform == "TSS") {
-    aggregated <- .apply_tss(aggregated, prop_scale = 100)
-  }
 
   # Update tax_table: keep one row per tax_ID
 
@@ -325,6 +405,7 @@
 #'   at the specified rank. If `FALSE`, fills missing values using lineage context.
 #' @param transform `Character.` Transformation to apply to abundances after agglomeration.
 #'   One of `"None"` (no transformation) or `"TSS"` (Total Sum Scaling to relative abundance).
+#'   If `filtered_taxa` are present in a `microEDA` object, they will be included in the transformation calculation.
 #' @param add_prefix `Logical`. If `TRUE`, adds QIIME-style prefixes (e.g., `k__`, `p__`)
 #'   to taxonomic labels.
 #'
@@ -402,65 +483,27 @@ agglomerate_taxa <- function(me,
     tax_df <- .add_taxonomy_prefix(tax_df)
   }
 
+  # Check for conflicting higher-level taxonomy
+  suppressMessages(check_taxonomic_consistency(tax_df, tax_rank = tax_rank, detailed_report = FALSE))
+
   # Add tax_ID for grouping
   tax_df$tax_ID <- tax_df[[tax_rank]]
-
-  # Check for conflicting higher-level taxonomy
-  tax_check <- tax_df |>
-    dplyr::group_by(.data$tax_ID) |>
-    dplyr::summarise(
-      dplyr::across(1:dplyr::all_of(tax_rank),
-        ~ dplyr::n_distinct(.x),
-        .names = "n_{col}"
-      ),
-      .groups = "drop"
-    )
-
-  # Check if any rank has more than one distinct value per tax_ID
-  conflicts <- dplyr::filter(tax_check, dplyr::if_any(dplyr::starts_with("n_"), ~ .x > 1))
-
-  n_inconsistent <- nrow(conflicts)
-  taxon_label <- if (n_inconsistent == 1) "taxon" else "taxa"
-
-  if (n_inconsistent > 0) {
-    warning(
-      "Conflicting taxonomy for ", n_inconsistent, " ", taxon_label,
-      " at rank '", tax_rank, "'. Inconsistent higher-level classification",
-      if (n_inconsistent > 1) "s", " detected for:\n",
-      toString(conflicts$tax_ID),
-      call. = FALSE
-    )
-  }
 
   # Collapse each lineage into a single string to serve as groups
   tax_df$tax_ID <- apply(
     tax_df[, 1:rank_index, drop = FALSE], 1,
     function(x) paste(x, collapse = ";")
   )
-  # Ensure tax_ID is same for tax and abund tables
-  # abund_df$tax_ID <- tax_df$tax_ID
 
   group_ids <- tax_df$tax_ID
-  # names(group_ids) <- rownames(tax_df)
-
   # Agglomerate abundances by tax_ID
   aggregated <- rowsum(as(abund_df, "matrix"), group = group_ids, reorder = FALSE)
-  # aggregated <- abund_df |>
-  #   # tibble::rownames_to_column("OTU") |>
-  #   dplyr::group_by(tax_ID) |>
-  #   dplyr::summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE)), .groups = "drop")
-
-  # Apply TSS (Total Sum Scaling / Relative Abundance) if requested
-  if (transform == "TSS") {
-    aggregated <- .apply_tss(aggregated, prop_scale = 100)
-  }
 
   # Extract full taxonomy up to the target rank
   tax_subset <- tax_df[, 1:rank_index, drop = FALSE]
 
   # To match with aggregated tax_IDs (the grouped names at target rank) and to
   # ensure row order matches aggregated$tax_ID
-  # tax_subset$tax_ID <- tax_subset[[tax_rank]]
   tax_subset$tax_ID <- apply(
     tax_subset[, 1:rank_index, drop = FALSE], 1,
     function(x) paste(x, collapse = ";")
@@ -471,7 +514,6 @@ agglomerate_taxa <- function(me,
   new_tax_df <- tax_subset[!duplicated(tax_subset$tax_ID), , drop = FALSE]
 
   # Reorder to match the order in 'aggregated'
-  # new_tax_df <- new_tax_df[match(aggregated$tax_ID, new_tax_df$tax_ID), ]
   new_tax_df <- new_tax_df[match(rownames(aggregated), new_tax_df$tax_ID), ]
 
   # Remove tax_ID column and convert to matrix for tax_table
@@ -480,7 +522,6 @@ agglomerate_taxa <- function(me,
 
   # Update row names and remove tax_ID for OTU table
   rownames(aggregated) <- rownames(tax_tbl)
-  # aggregated <- aggregated[, -which(names(aggregated) == "tax_ID")]
   otu_tbl <- phyloseq::otu_table(as.matrix(aggregated), taxa_are_rows = TRUE)
 
   # Construct new phyloseq object
@@ -514,9 +555,6 @@ agglomerate_taxa <- function(me,
     # Update taxrank
     taxrank(agglomerated_obj) <- tax_rank
 
-    # Update transform if necessary
-    if (!transform == "None") transforms(agglomerated_obj) <- transform
-
     # If present, also agglomerate filtered taxa
     other_tax <- filtered_taxa(me)
 
@@ -524,7 +562,6 @@ agglomerate_taxa <- function(me,
       agg_filtered <- .agglomerate_filtered_taxa(other_tax,
         tax_rank = tax_rank,
         rm_missing = rm_missing,
-        transform = transform,
         add_prefix = add_prefix
       )
       filtered_taxa(agglomerated_obj) <- agg_filtered
@@ -532,6 +569,10 @@ agglomerate_taxa <- function(me,
   } else {
     agglomerated_obj <- phy_new
   }
+
+  # Apply normalisation / transformation if requested
+  if (!transform == "None") agglomerated_obj <- .apply_transformation(agglomerated_obj, transform = transform)
+
   return(agglomerated_obj)
 }
 
