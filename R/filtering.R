@@ -17,7 +17,7 @@
 #' `"mean"` to also require the mean abundance passing the threshold.
 #' @param group_requirement A `character` string; `"any"` (default) if a feature
 #' must pass in at least one group, or `"all"` if it must pass in all groups.
-#' @param keep_other A `logical` value; if `TRUE` and filtering is applied, adds
+#' @param keep_filtered A `logical` value; if `TRUE` and filtering is applied, adds
 #' an "Other" row summarizing the abundance of filtered features.
 #'
 #' @return A filtered `data.frame` with features that meet the criteria,
@@ -52,7 +52,7 @@
                              min_prevalence = 0,
                              abundance_criterion = c("prevalence", "mean"),
                              group_requirement = c("any", "all"),
-                             keep_other = TRUE) {
+                             keep_filtered = TRUE) {
   abundance_criterion <- match.arg(abundance_criterion)
   group_requirement <- match.arg(group_requirement)
 
@@ -133,7 +133,7 @@
   filtered_data <- x[x$tax_ID %in% filtered_taxa, , drop = FALSE]
 
   # Add "Other" row if taxa were likely removed
-  if (keep_other && (min_abundance > 0 || min_prevalence > 0)) {
+  if (keep_filtered && (min_abundance > 0 || min_prevalence > 0)) {
     initial_colsums <- colSums(x[is_numeric])
     filtered_data <- .add_other_row(filtered_data, initial_colsums, tax_col = "tax_ID")
   }
@@ -211,13 +211,13 @@
 #' @param group_requirement `Character` string. When `group_var` is specified, determines
 #'   whether the criterion must be met in `"any"` group or `"all"` groups.
 #'   Default: `"any"`.
-#' @param keep_other `Logical`. If `TRUE` and any features are removed, stores the
+#' @param keep_filtered `Logical`. If `TRUE` and any features are removed, stores the
 #'   otu_table and tax_table of the filtered-out features in the `@info$filtered_taxa`
 #'   slot of `microEDA` objects as matrices. Has no effect for `phyloseq` objects.
 #'
 #' @return A new `microEDA` or `phyloseq` object with features not meeting the
 #'   requirements removed. A message reports how many features were dropped. If
-#'   `keep_other = TRUE` and features were removed, the abundances and taxonomy
+#'   `keep_filtered = TRUE` and features were removed, the abundances and taxonomy
 #'   of the removed features are stored in the `filtered_taxa()` slot of `microEDA`
 #'   objects.
 #'
@@ -250,7 +250,7 @@ filter_features <- function(me,
                             group_var = NULL,
                             abundance_criterion = c("prevalence", "mean"),
                             group_requirement = c("any", "all"),
-                            keep_other = TRUE) {
+                            keep_filtered = TRUE) {
   if (!inherits(me, "microEDA") && !inherits(me, "phyloseq")) {
     stop("'me' must be a microEDA or phyloseq object.")
   }
@@ -300,6 +300,8 @@ filter_features <- function(me,
     # Grouped filtering
     metadata <- phyloseq::sample_data(me) |>
       tibble::rownames_to_column("Sample")
+
+    if (!group_var %in% colnames(metadata)) stop("'group_var' not found in sample_data.")
 
     df_long <- tibble::rownames_to_column(as.data.frame(abund_data), "tax_ID") |>
       tidyr::pivot_longer(
@@ -353,21 +355,24 @@ filter_features <- function(me,
   }
 
   # Add "Other" row if taxa were removed
-  if (keep_other && n_removed > 0) {
+  if (keep_filtered && n_removed > 0) {
     if (inherits(me, "microEDA")) {
-      # # Create a mini phyloseq object for filtered taxa
-      # other_ps <- phyloseq::prune_taxa(dropped_taxa, me)
-      #
-      # # Store in microEDA@info
-      # filtered_taxa(filtered_data) <- phyloseq::phyloseq(
-      #   phyloseq::otu_table(other_ps),
-      #   phyloseq::tax_table(other_ps),
-      #   phyloseq::phy_tree(other_ps, errorIfNULL = FALSE)
-      # )
-
       # After filtering, store only minimal data to minimize object size
       filtered_otu <- otu_table(me)[dropped_taxa, , drop = FALSE]
       filtered_tax <- tax_table(me)[dropped_taxa, , drop = FALSE]
+
+      # Retrieve existing filtered taxa, if any
+      existing_data <- filtered_taxa(filtered_data)
+
+      # Merge with existing data if present
+      if (!is.null(existing_data)) {
+        if (!is.null(existing_data$filtered_otu) && nrow(existing_data$filtered_otu) > 0) {
+          filtered_otu <- rbind(existing_data$filtered_otu, filtered_otu)
+        }
+        if (!is.null(existing_data$filtered_tax) && nrow(existing_data$filtered_tax) > 0) {
+          filtered_tax <- rbind(existing_data$filtered_tax, filtered_tax)
+        }
+      }
 
       # Save as matrices in microEDA@info, avoiding full phyloseq overhead
       filtered_taxa(filtered_data) <- list(
@@ -375,51 +380,22 @@ filter_features <- function(me,
         filtered_tax = as(filtered_tax, "matrix")
       )
     }
-
-    # orig_otu <- phyloseq::otu_table(me)
-    # pruned_otu <- phyloseq::otu_table(filtered_data)
-    # pruned_tax <- phyloseq::tax_table(filtered_data)
-    #
-    # # Check for existing 'Other' rows
-    # other_mask <- rownames(pruned_otu) == "Other"
-    #
-    # # Sum all 'Other' rows if any exist
-    # if (any(other_mask)) {
-    #   other_sum <- colSums(pruned_otu[other_mask, , drop = FALSE], na.rm = TRUE)
-    #   # Remove all existing 'Other' rows
-    #   pruned_otu <- pruned_otu[!other_mask, ]
-    #   pruned_tax <- pruned_tax[!other_mask, ]
-    # } else {
-    #   other_sum <- 0
-    # }
-    #
-    # # Compute "Other" as difference
-    # other_vals <- colSums(orig_otu) - colSums(pruned_otu) + other_sum
-    # other_row <- matrix(other_vals,
-    #   nrow = 1,
-    #   dimnames = list("Other", colnames(other_vals))
-    # )
-    #
-    # # Extend OTU table
-    # new_otu <- rbind(pruned_otu, other_row)
-    # filtered_data@otu_table <- phyloseq::otu_table(new_otu, taxa_are_rows = TRUE)
-    #
-    # # Extend tax_table with "Other" for all taxonomic ranks
-    # n_tax_ranks <- ncol(pruned_tax)
-    # other_tax <- matrix("Other",
-    #   nrow = 1, ncol = n_tax_ranks,
-    #   dimnames = list("Other", colnames(pruned_tax))
-    # )
-    #
-    # # Bind to existing tax table
-    # new_tax <- rbind(pruned_tax, other_tax)
-    # filtered_data@tax_table <- phyloseq::tax_table(new_tax)
   }
 
   if (inherits(me, "microEDA")) {
     # Reconstruct microEDA
     filtered_obj <- new("microEDA", filtered_data)
-    filters(filtered_obj) <- c(min_abundance = min_abundance, min_prevalence = min_prevalence)
+    if (n_removed > 0) {
+      filter_history(filtered_obj) <- list(
+        min_abundance = min_abundance,
+        min_prevalence = min_prevalence,
+        group_var = group_var,
+        abundance_criterion = abundance_criterion,
+        group_requirement = group_requirement,
+        keep_filtered = keep_filtered,
+        n_removed = n_removed
+      )
+    }
   } else {
     filtered_obj <- filtered_data # As it will already be a phyloseq object in this case
   }
@@ -442,25 +418,6 @@ filter_features <- function(me,
   }
 
   # To reduce object size, avoid full phyloseq overhead and use matrices instead
-  # other_ps <- filtered_taxa(me)
-  # otu <- otu_table(other_ps)
-  # tax <- tax_table(other_ps)
-  #
-  # # Collapse abundances
-  # other_otu <- matrix(colSums(otu), nrow = 1, dimnames = list("Other", colnames(otu)))
-  # other_tax <- matrix("Other",
-  #   nrow = 1, ncol = ncol(tax),
-  #   dimnames = list("Other", colnames(tax))
-  # )
-  #
-  # # Construct minimal phyloseq object
-  # other_physeq <- phyloseq::phyloseq(
-  #   otu_table(other_otu, taxa_are_rows = TRUE),
-  #   tax_table(other_tax)
-  # )
-  #
-  # return(other_physeq)
-
   otu <- filtered_taxa(me)$filtered_otu
   tax <- filtered_taxa(me)$filtered_tax
 
@@ -496,13 +453,9 @@ filter_features <- function(me,
   }
 
   # Find rows below threshold (excluding any previous "Other")
-  # below_thresh <- rowSums(df[sample_cols] < threshold) == length(sample_cols)
   below_threshold <- apply(df[sample_cols], 1, max, na.rm = TRUE) < threshold
 
   # Sum abundances into the "Other" row, preserving existing values if present
-  # for (col in sample_cols) {
-  #   other_data[[col]] <- other_data[[col]] + sum(df[below_thresh, col], na.rm = TRUE)
-  # }
   other_data[sample_cols] <- other_data[sample_cols] + colSums(df[below_threshold, sample_cols], na.rm = TRUE)
 
   # Remove rows below threshold

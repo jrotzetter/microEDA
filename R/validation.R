@@ -56,7 +56,7 @@
   # Upper limit needs to be a bit higher to account for minor floating-point
   # precision errors
   if (!all(df_num >= 0 & df_num <= 1.02 | df_num <= 102, na.rm = TRUE)) {
-    if (!silent) warning("Values outside [0,1] or [0,100] - may not be relative abundances.")
+    if (!silent) warning("Values outside [0,1] or [0,100] - data may not be relative abundances.")
     is_rel <- FALSE
   }
   return(is_rel)

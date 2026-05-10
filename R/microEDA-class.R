@@ -112,7 +112,7 @@ setMethod(
 
 #### microEDA methods for info slot ####
 ### //////////////////////////////////////////////////////////////////////////###
-.valid_keys <- c("taxrank", "transforms", "filters", "mpa_version", "filtered_taxa")
+.valid_keys <- c("taxrank", "transforms", "filter_history", "mpa_version", "filtered_taxa")
 
 #' Get or set the info slot from a microEDA object
 #'
@@ -128,12 +128,23 @@ setMethod(
 #' @param object A \linkS4class{microEDA} object.
 #' @param value Only used in replacement methods (setters).
 #' \describe{
-#'  \item{For `info<-`: }{A `list` containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.}
+#'  \item{For `info<-`: }{A `list` containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filter_history', 'mpa_version'.}
 #'  \item{For `taxrank<-`: }{A `character` string specifying the taxonomic rank (e.g., "Species", "Genus").}
 #'  \item{For `transforms<-`: }{A `character` vector of applied transformation(s) (e.g., c("TSS", "log2")).}
 #'  \item{For `mpa_version<-`: }{A `character` string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").}
 #'  \item{For `filtered_taxa<-`: }{A `list` with otu_table and tax_table (as matrices) of features that were filtered out.}
-#'  \item{For `filters<-`: }{A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).}
+#'  \item{For `filter_history<-`: }{A named list specifying used filter parameters. Expected elements include:
+#'    \itemize{
+#'      \item \code{min_abundance}: numeric threshold for minimum abundance.
+#'      \item \code{min_prevalence}: numeric threshold for minimum prevalence.
+#'      \item \code{group_var}: optional grouping variable for stratified filtering.
+#'      \item \code{abundance_criterion}: filtering criterion applied to abundance values.
+#'      \item \code{group_requirement}: filter passing requirement for group-wise filtering.
+#'      \item \code{keep_filtered}: logical indicating whether filtered-out features were preserved in `@info$filtered_taxa`.
+#'      \item \code{n_removed}: integer indicating the number of features removed.
+#'      }
+#'    See \code{\link{filter_features}} for details on filtering arguments.
+#'    }
 #'  }
 #' @return \describe{
 #'  \item{For `info()`: }{A `list` containing metadata.}
@@ -143,7 +154,7 @@ setMethod(
 #'  \item{For `transforms()`: }{A `character` vector of applied transformations.}
 #'  \item{For `mpa_version()`: }{A `character` string with the used the MetaPhlAn database version.}
 #'  \item{For `filtered_taxa()`: }{A `list` with otu_table and tax_table of features that were filtered out.}
-#'  \item{For `filters()`: }{A `list` of used filter parameters.}
+#'  \item{For `filter_history()`: }{A `list` of used filter parameters.}
 #' }
 #' Replacement methods (`<-`) will return a `microEDA` object with the updated
 #' corresponding slots.
@@ -156,7 +167,7 @@ setMethod(
 #'
 #' `filtered_taxa`: represents the otu_table and tax_table of features that were filtered out.
 #'
-#' `filters`: represents filters that were applied to the abundance data (otu_table).
+#' `filter_history`: represents filters that were applied to the abundance data (otu_table).
 #'
 #' @rdname info-accessors
 #' @aliases info,microEDA-method
@@ -283,17 +294,48 @@ setMethod("filtered_taxa<-", "microEDA", function(object, value) {
 
 
 #' @rdname info-accessors
-#' @aliases filters,microEDA-method
+#' @aliases filter_history,microEDA-method
 #' @export
-setGeneric("filters", function(object) standardGeneric("filters"))
-setMethod("filters", "microEDA", function(object) object@info[["filters"]])
+setGeneric("filter_history", function(object) standardGeneric("filter_history"))
+setMethod("filter_history", "microEDA", function(object) object@info[["filter_history"]])
 
 #' @rdname info-accessors
-#' @aliases filters<-,microEDA-method
+#' @aliases filter_history<-,microEDA-method
 #' @export
-setGeneric("filters<-", function(object, value) standardGeneric("filters<-"))
-setMethod("filters<-", "microEDA", function(object, value) {
-  object@info[["filters"]] <- value
+setGeneric("filter_history<-", function(object, value) standardGeneric("filter_history<-"))
+setMethod("filter_history<-", "microEDA", function(object, value) {
+  .valid_filter_arguments <- c(
+    "min_abundance",
+    "min_prevalence",
+    "group_var",
+    "abundance_criterion",
+    "group_requirement",
+    "keep_filtered",
+    "n_removed"
+  )
+
+  if (!is.list(value)) stop("'filter_history' must be a named list.")
+
+  if (any(!names(value) %in% .valid_filter_arguments)) {
+    invalid <- names(value)[!names(value) %in% .valid_filter_arguments]
+    stop(
+      "Unknown filter arguments: ", paste(invalid, collapse = ", "),
+      ". Expected keys are: ", paste(.valid_keys, collapse = ", ")
+    )
+  }
+
+  if (is.null(value$group_var)) {
+    value$group_var <- ""
+    value$group_requirement <- ""
+  }
+
+  # Initialize filter_history if not present
+  if (is.null(object@info[["filter_history"]])) {
+    object@info[["filter_history"]] <- value
+  } else { # Append current filter run
+    object@info[["filter_history"]] <- mapply(c, object@info[["filter_history"]], value, SIMPLIFY = FALSE)
+  }
+
   validObject(object)
   object
 })

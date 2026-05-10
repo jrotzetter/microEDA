@@ -564,7 +564,7 @@ agglomerate_taxa <- function(me,
                                  group_var = NULL,
                                  abundance_criterion = c("prevalence", "mean"),
                                  group_requirement = c("any", "all"),
-                                 keep_other = TRUE,
+                                 keep_filtered = TRUE,
                                  rm_missing = FALSE,
                                  transform = c("None", "TSS"),
                                  add_prefix = FALSE,
@@ -600,7 +600,7 @@ agglomerate_taxa <- function(me,
     group_var = group_var,
     abundance_criterion = abundance_criterion,
     group_requirement = group_requirement,
-    keep_other = keep_other
+    keep_filtered = keep_filtered
   )
 
   me <- agglomerate_taxa(me,
@@ -622,16 +622,12 @@ agglomerate_taxa <- function(me,
 
     # Now append "Other" row to OTU table
     abund_tab <- rbind(abund_tab, other_row)
-
-    start_threshold <- filters(me)["min_abundance"]
-  } else {
-    start_threshold <- 0
   }
 
   # Pass to incrementing filter to reduce ntaxa
   abund_tab_reduced <- .apply_incrementing_filter(abund_tab,
     ntaxa = ntaxa,
-    initial_threshold = start_threshold
+    initial_threshold = 0
   )
 
   tax_abund <- abund_tab_reduced$data |>

@@ -23,10 +23,10 @@
 \alias{filtered_taxa,microEDA-method}
 \alias{filtered_taxa<-}
 \alias{filtered_taxa<-,microEDA-method}
-\alias{filters}
-\alias{filters,microEDA-method}
-\alias{filters<-}
-\alias{filters<-,microEDA-method}
+\alias{filter_history}
+\alias{filter_history,microEDA-method}
+\alias{filter_history<-}
+\alias{filter_history<-,microEDA-method}
 \title{Get or set the info slot from a microEDA object}
 \usage{
 info(object)
@@ -53,21 +53,32 @@ filtered_taxa(object)
 
 filtered_taxa(object) <- value
 
-filters(object)
+filter_history(object)
 
-filters(object) <- value
+filter_history(object) <- value
 }
 \arguments{
 \item{object}{A \linkS4class{microEDA} object.}
 
 \item{value}{Only used in replacement methods (setters).
 \describe{
-\item{For \verb{info<-}: }{A \code{list} containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filters', 'mpa_version'.}
+\item{For \verb{info<-}: }{A \code{list} containing metadata. Valid metadata keys are: 'taxrank', 'transforms', 'filter_history', 'mpa_version'.}
 \item{For \verb{taxrank<-}: }{A \code{character} string specifying the taxonomic rank (e.g., "Species", "Genus").}
 \item{For \verb{transforms<-}: }{A \code{character} vector of applied transformation(s) (e.g., c("TSS", "log2")).}
 \item{For \verb{mpa_version<-}: }{A \code{character} string specifying the MetaPhlAn version (e.g., "#mpa_vJun23_CHOCOPhlAnSGB_202307").}
 \item{For \verb{filtered_taxa<-}: }{A \code{list} with otu_table and tax_table (as matrices) of features that were filtered out.}
-\item{For \verb{filters<-}: }{A named vector specifying used filter parameters (e.g., c(min_abundance = 0.01, min_prevalence = 0.5)).}
+\item{For \verb{filter_history<-}: }{A named list specifying used filter parameters. Expected elements include:
+\itemize{
+\item \code{min_abundance}: numeric threshold for minimum abundance.
+\item \code{min_prevalence}: numeric threshold for minimum prevalence.
+\item \code{group_var}: optional grouping variable for stratified filtering.
+\item \code{abundance_criterion}: filtering criterion applied to abundance values.
+\item \code{group_requirement}: filter passing requirement for group-wise filtering.
+\item \code{keep_filtered}: logical indicating whether filtered-out features were preserved in \verb{@info$filtered_taxa}.
+\item \code{n_removed}: integer indicating the number of features removed.
+}
+See \code{\link{filter_features}} for details on filtering arguments.
+}
 }}
 }
 \value{
@@ -79,7 +90,7 @@ filters(object) <- value
 \item{For \code{transforms()}: }{A \code{character} vector of applied transformations.}
 \item{For \code{mpa_version()}: }{A \code{character} string with the used the MetaPhlAn database version.}
 \item{For \code{filtered_taxa()}: }{A \code{list} with otu_table and tax_table of features that were filtered out.}
-\item{For \code{filters()}: }{A \code{list} of used filter parameters.}
+\item{For \code{filter_history()}: }{A \code{list} of used filter parameters.}
 }
 Replacement methods (\verb{<-}) will return a \code{microEDA} object with the updated
 corresponding slots.
@@ -102,7 +113,7 @@ while filled info fields of a \code{microEDA} object can be displayed with
 
 \code{filtered_taxa}: represents the otu_table and tax_table of features that were filtered out.
 
-\code{filters}: represents filters that were applied to the abundance data (otu_table).
+\code{filter_history}: represents filters that were applied to the abundance data (otu_table).
 }
 \seealso{
 \code{\link{mpa_version,metaphlanProfile-method}}

@@ -11,7 +11,7 @@ filter_features(
   group_var = NULL,
   abundance_criterion = c("prevalence", "mean"),
   group_requirement = c("any", "all"),
-  keep_other = TRUE
+  keep_filtered = TRUE
 )
 }
 \arguments{
@@ -40,14 +40,14 @@ Default: \code{"prevalence"}.}
 whether the criterion must be met in \code{"any"} group or \code{"all"} groups.
 Default: \code{"any"}.}
 
-\item{keep_other}{\code{Logical}. If \code{TRUE} and any features are removed, stores the
+\item{keep_filtered}{\code{Logical}. If \code{TRUE} and any features are removed, stores the
 otu_table and tax_table of the filtered-out features in the \verb{@info$filtered_taxa}
 slot of \code{microEDA} objects as matrices. Has no effect for \code{phyloseq} objects.}
 }
 \value{
 A new \code{microEDA} or \code{phyloseq} object with features not meeting the
 requirements removed. A message reports how many features were dropped. If
-\code{keep_other = TRUE} and features were removed, the abundances and taxonomy
+\code{keep_filtered = TRUE} and features were removed, the abundances and taxonomy
 of the removed features are stored in the \code{filtered_taxa()} slot of \code{microEDA}
 objects.
 }
