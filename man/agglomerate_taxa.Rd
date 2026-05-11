@@ -19,7 +19,9 @@ agglomerate_taxa(
 (e.g., "Genus", "Family"). Must exist in the tax_table of \code{me}.}
 
 \item{rm_missing}{\code{Logical.} If \code{TRUE}, removes taxa with missing/unclassified entries
-at the specified rank. If \code{FALSE}, fills missing values using lineage context.}
+at the specified rank. If \code{FALSE}, fills missing values by propagating the
+last known ancestor, labeling them as "Unclassified \emph{Last_Known_Parent_Clade}"
+(e.g., "Unclassified Enterobacteriaceae").}
 
 \item{transform}{\code{Character.} Transformation to apply to abundances after agglomeration.
 One of \code{"None"} (no transformation) or \code{"TSS"} (Total Sum Scaling to relative abundance).
@@ -31,7 +33,7 @@ to taxonomic labels.}
 \value{
 Returns an object of the same class as input (\code{microEDA} or \code{phyloseq}),
 with taxa agglomerated at the specified rank. Preserves sample data, phylogenetic
-tree (pruned), and reference sequences if present in the input.
+tree (pruned), and reference sequences if present in \code{me}.
 }
 \description{
 Collapses a microbiome dataset (\code{microEDA} or \code{phyloseq} object) by aggregating
@@ -45,11 +47,17 @@ This function performs safe agglomeration by grouping taxa based on their full
 lineage up to the target rank, reducing the risk of incorrectly merging distinct clades.
 A warning is issued if multiple distinct higher-rank lineages map to the same group
 at the target level, indicating potential annotation inconsistencies.
+
+When multiple sequences (ASVs/OTUs) belong to the same taxonomic group at the
+target rank, the ID assigned to the agglomerated feature is taken from
+the most abundant sequence (summed across samples) within that group. This
+should ensure that the dominant biological variant drives ASV/OTU labeling,
+enhancing representativeness.
 }
 \note{
 This implementation is significantly faster than \code{\link[phyloseq:tax_glom]{phyloseq::tax_glom}},
 especially on large datasets, due to efficient use of vectorized operations.
-Benchmarks show speedups of over 100x compared to \code{tax_glom}.
+Benchmarks show speedups of 10x to over 100x compared to \code{tax_glom}.
 }
 \examples{
 # Example with a phyloseq object

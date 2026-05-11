@@ -365,7 +365,7 @@
     function(x) paste(x, collapse = ";")
   )
 
-  # Agglomerate abundances
+  # Agglomerate abundances by tax_ID
   aggregated <- rowsum(as.matrix(otu_mat), group = tax_df$tax_ID, reorder = FALSE)
 
   # Update tax_table: keep one row per tax_ID
@@ -380,7 +380,19 @@
     function(x) paste(x, collapse = ";")
   )
 
-  new_tax_df <- tax_subset[!duplicated(tax_subset$tax_ID), , drop = FALSE]
+  # Add total abundance over all samples for each OTU
+  abund_sums <- rowSums(otu_mat)
+
+  # Get rownames (ASVs/OTUs) with highest abundance within a tax_ID, which
+  # should be biologically more representative than using the first occurring
+  # OTU of a tax_ID
+  max_rownames <- tapply(seq_along(tax_subset$tax_ID), tax_subset$tax_ID, function(i) i[which.max(abund_sums[i])])
+  max_rownames <- unname(unlist(max_rownames))
+
+  # Then use these to keep only one row per tax_ID
+  new_tax_df <- tax_subset[max_rownames, ]
+
+  # Reorder to match the order in 'aggregated'
   new_tax_df <- new_tax_df[match(rownames(aggregated), new_tax_df$tax_ID), ]
   new_tax_mat <- as.matrix(new_tax_df[, -ncol(new_tax_df)]) # Since tax_ID is last column
   rownames(aggregated) <- rownames(new_tax_mat)
@@ -402,7 +414,9 @@
 #' @param tax_rank `Character` string specifying the taxonomic rank for agglomeration
 #'   (e.g., "Genus", "Family"). Must exist in the tax_table of `me`.
 #' @param rm_missing `Logical.` If `TRUE`, removes taxa with missing/unclassified entries
-#'   at the specified rank. If `FALSE`, fills missing values using lineage context.
+#'   at the specified rank. If `FALSE`, fills missing values by propagating the
+#'   last known ancestor, labeling them as "Unclassified _Last_Known_Parent_Clade_"
+#'   (e.g., "Unclassified Enterobacteriaceae").
 #' @param transform `Character.` Transformation to apply to abundances after agglomeration.
 #'   One of `"None"` (no transformation) or `"TSS"` (Total Sum Scaling to relative abundance).
 #'   If `filtered_taxa` are present in a `microEDA` object, they will be included in the transformation calculation.
@@ -411,7 +425,7 @@
 #'
 #' @return Returns an object of the same class as input (`microEDA` or `phyloseq`),
 #'   with taxa agglomerated at the specified rank. Preserves sample data, phylogenetic
-#'   tree (pruned), and reference sequences if present in the input.
+#'   tree (pruned), and reference sequences if present in `me`.
 #'
 #' @details
 #' This function performs safe agglomeration by grouping taxa based on their full
@@ -419,9 +433,15 @@
 #' A warning is issued if multiple distinct higher-rank lineages map to the same group
 #' at the target level, indicating potential annotation inconsistencies.
 #'
+#' When multiple sequences (ASVs/OTUs) belong to the same taxonomic group at the
+#' target rank, the ID assigned to the agglomerated feature is taken from
+#' the most abundant sequence (summed across samples) within that group. This
+#' should ensure that the dominant biological variant drives ASV/OTU labeling,
+#' enhancing representativeness.
+#'
 #' @note This implementation is significantly faster than [`phyloseq::tax_glom`],
 #' especially on large datasets, due to efficient use of vectorized operations.
-#' Benchmarks show speedups of over 100x compared to `tax_glom`.
+#' Benchmarks show speedups of 10x to over 100x compared to `tax_glom`.
 #'
 #' @examples
 #' # Example with a phyloseq object
@@ -487,8 +507,6 @@ agglomerate_taxa <- function(me,
   suppressMessages(check_taxonomic_consistency(tax_df, tax_rank = tax_rank, detailed_report = FALSE))
 
   # Add tax_ID for grouping
-  tax_df$tax_ID <- tax_df[[tax_rank]]
-
   # Collapse each lineage into a single string to serve as groups
   tax_df$tax_ID <- apply(
     tax_df[, 1:rank_index, drop = FALSE], 1,
@@ -509,9 +527,17 @@ agglomerate_taxa <- function(me,
     function(x) paste(x, collapse = ";")
   )
 
-  # Aggregate: keep only one row per tax_ID, keeping the first occurrence (since
-  # all rows with same tax_ID at target rank should have same higher ranks, ideally)
-  new_tax_df <- tax_subset[!duplicated(tax_subset$tax_ID), , drop = FALSE]
+  # Add total abundance over all samples for each OTU
+  abund_sums <- rowSums(abund_df)
+
+  # Get rownames (ASVs/OTUs) with highest abundance within a tax_ID, which
+  # should be biologically more representative than using the first occurring
+  # OTU of a tax_ID
+  max_rownames <- tapply(seq_along(tax_subset$tax_ID), tax_subset$tax_ID, function(i) i[which.max(abund_sums[i])])
+  max_rownames <- unname(unlist(max_rownames))
+
+  # Then use these to keep only one row per tax_ID
+  new_tax_df <- tax_subset[max_rownames, ]
 
   # Reorder to match the order in 'aggregated'
   new_tax_df <- new_tax_df[match(rownames(aggregated), new_tax_df$tax_ID), ]
