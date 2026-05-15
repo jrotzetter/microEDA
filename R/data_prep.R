@@ -630,6 +630,7 @@ agglomerate_taxa <- function(me,
                                  ntaxa = 30,
                                  group_var = NULL,
                                  abundance_criterion = c("prevalence", "mean"),
+                                 filter_by_group = FALSE,
                                  group_requirement = c("any", "all"),
                                  keep_filtered = TRUE,
                                  rm_missing = FALSE,
@@ -661,10 +662,12 @@ agglomerate_taxa <- function(me,
     stop("Abundance data contains negative values.")
   }
 
+  group_var_arg <- if (filter_by_group) group_var else NULL
+
   me <- filter_features(me,
     min_abundance = min_abundance,
     min_prevalence = min_prevalence,
-    group_var = group_var,
+    group_var = group_var_arg,
     abundance_criterion = abundance_criterion,
     group_requirement = group_requirement,
     keep_filtered = keep_filtered
@@ -691,6 +694,15 @@ agglomerate_taxa <- function(me,
     abund_tab <- rbind(abund_tab, other_row)
   }
 
+  # Check if data is relative abundances or counts for plot labeling
+  if (suppressWarnings(.is_proportion(abund_tab))) {
+    is_rel_abund <- TRUE
+  } else if (suppressWarnings(.is_counts(abund_tab))) {
+    is_rel_abund <- FALSE
+  } else {
+    stop("Data is neither counts nor relative abundance - data was likely transformed.")
+  }
+
   # Pass to incrementing filter to reduce ntaxa
   abund_tab_reduced <- .apply_incrementing_filter(abund_tab,
     ntaxa = ntaxa,
@@ -699,7 +711,13 @@ agglomerate_taxa <- function(me,
 
   tax_abund <- abund_tab_reduced$data |>
     dplyr::rename(Taxon = "tax_ID") |>
-    tidyr::pivot_longer(-.data$Taxon, names_to = "Sample", values_to = "Abundance") |>
+    # Sum abundances of duplicate taxa across higher-level lineage variants.
+    # This is necessary for taxa with conflicting higher-level inconsistencies
+    # due to several entries for the same taxon existing per sample, introducing
+    # bias to summary statistics for the taxon (mean abundance, standard deviation, prevalence)
+    dplyr::group_by(.data$Taxon) |>
+    dplyr::summarize(dplyr::across(dplyr::where(is.numeric), ~ sum(., na.rm = TRUE)), .groups = "drop") |>
+    tidyr::pivot_longer(-.data$Taxon, names_to = "Sample", values_to = ifelse(is_rel_abund, "Relative_Abundance", "Abundance")) |>
     dplyr::arrange(.data$Sample)
 
   # Process tax_ID for plotting (markdown)
@@ -751,4 +769,12 @@ agglomerate_taxa <- function(me,
   col_new <- dplyr::recode(col, !!!values)
   df[[column]] <- col_new
   return(df)
+}
+
+
+#' @keywords internal
+#' @noRd
+.specify_decimal <- function(x, k = 3) {
+  # will return a character string, only for printing/plotting purposes
+  trimws(format(round(x, k), nsmall = k))
 }
