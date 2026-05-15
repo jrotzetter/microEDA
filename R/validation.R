@@ -63,6 +63,63 @@
 }
 
 
+#' Check if a taxonomic profile contains raw count data
+#'
+#' @param tax_profile A matrix or data frame containing taxonomic abundance data.
+#' Non-numeric columns are ignored.
+#' @param tolerance Numeric threshold for acceptable variation in column sums.
+#' @param silent `Logical`; if FALSE (default), warnings are issued for failed checks.
+#' If TRUE, the function runs silently.
+#'
+#' @details
+#' Determines whether the numeric columns in a taxonomic profile represent
+#' raw count data by verifying that: (1) values are non-negative integers,
+#' (2) column sums vary significantly (not constant like proportions),
+#' (3) values are outside typical proportion ranges (between 0 and 1, or 0 and 100),
+#' and (4) no negative or decimal values indicative of transformation (e.g., log, CLR).
+#'
+#' @returns `TRUE` if data meet all criteria for raw count data; `FALSE` otherwise.
+#' @noRd
+.is_counts <- function(tax_profile, tolerance = 0.3, silent = FALSE) {
+  is_count <- TRUE
+
+  # Identify numeric columns
+  is_numeric <- if (is.matrix(tax_profile)) {
+    rep(is.numeric(tax_profile), ncol(tax_profile))
+  } else {
+    vapply(tax_profile, is.numeric, logical(1))
+  }
+  df_num <- tax_profile[, is_numeric, drop = FALSE]
+
+  # Check for non-integer values (indicative of transformation)
+  if (any(vapply(df_num, function(x) any(x != as.integer(x), na.rm = TRUE), logical(1L)), na.rm = TRUE)) {
+    if (!silent) warning("Decimal values present - data may be proportions or transformed.")
+    is_count <- FALSE
+  }
+
+  # Check for negative values
+  if (any(df_num < 0, na.rm = TRUE)) {
+    if (!silent) warning("Negative values present - data is likely transformed.")
+    is_count <- FALSE
+  }
+
+  # Check if values are within proportion ranges (0–1 or 0–100)
+  if (all(df_num >= 0 & df_num <= 1.02, na.rm = TRUE) || all(df_num >= 0 & df_num <= 102, na.rm = TRUE)) {
+    if (!silent) warning("Values within [0,1] or [0,100] range - data may be proportions.")
+    is_count <- FALSE
+  }
+
+  # Check if column sums are approximately constant (expected in proportions, not counts)
+  col_sums <- colSums(df_num, na.rm = TRUE)
+  is_constant <- diff(range(col_sums)) < tolerance
+  if (is_constant) {
+    if (!silent) warning("Column sums are nearly constant - data may be proportions or transformed.")
+    is_count <- FALSE
+  }
+  return(is_count)
+}
+
+
 #' Check if object is a valid taxonomic profile
 #'
 #' @param tax_profile A data frame with taxonomic abundance values for sample data.
