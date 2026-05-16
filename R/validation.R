@@ -16,21 +16,28 @@
 #'
 #' @param tax_profile A matrix or data frame containing taxonomic abundance data.
 #' Non-numeric columns are ignored.
-#' @param tolerance Numeric threshold for acceptable variation in column sums.
+#' @param cv_threshold Numeric threshold for coefficient of variation (CV) below which
+#' column sums are considered nearly constant (Default: 0.1).
 #' @param silent `Logical`; if FALSE (default), warnings are issued for failed checks.
 #' If TRUE, the function runs silently.
 #'
 #' @details
 #' Determines whether the numeric columns in a taxonomic profile represent
-#' relative abundances (proportions) by verifying that: (1) column sums are
-#' approximately constant within a tolerance, (2) no negative values are present,
-#' and (3) all values are within valid proportion ranges (between 0 and 1, or 0 and 100).
+#' relative abundances (proportions) by verifying that:
+#' (1) column sums are approximately constant within a tolerance (CV < `cv_threshold`),
+#' (2) no negative values are present, and
+#' (3) all values are within valid proportion ranges (between 0 and 1, or 0 and 100).
 #'
 #' @returns `TRUE` if data meet all criteria for relative abundances; `FALSE` otherwise.
 #' @noRd
-.is_proportion <- function(tax_profile, tolerance = 0.3, silent = FALSE) {
+.is_proportion <- function(tax_profile, cv_threshold = 0.1, silent = FALSE) {
   is_rel <- TRUE
 
+  if (!is.matrix(tax_profile) && !is.data.frame(tax_profile)) {
+    stop("'tax_profile' must be a matrix or data frame.")
+  }
+
+  # Identify numeric columns
   is_numeric <- if (is.matrix(tax_profile)) {
     rep(is.numeric(tax_profile), ncol(tax_profile))
   } else {
@@ -38,25 +45,39 @@
   }
   df_num <- tax_profile[, is_numeric, drop = FALSE]
 
-  col_sums <- colSums(df_num, na.rm = TRUE)
-  is_constant <- diff(range(col_sums)) < tolerance
-
-  if (!is_constant) {
-    if (!silent) warning("Column sums vary - data may not be relative abundances or may be transformed.")
-    is_rel <- FALSE
+  # Check for no numeric data
+  if (ncol(df_num) == 0) {
+    stop("No numeric columns found - cannot assess abundance data.")
   }
 
-  # Check for negative values
+  # 1. Check if samples (columns) have low variability in their sums, using
+  # coefficient of variation (CV), which accounts for the scale of the data
+  col_sums <- colSums(df_num, na.rm = TRUE)
+  if (mean(col_sums) == 0) {
+    if (!silent) warning("All column sums are zero - invalid abundance data.")
+    is_rel <- FALSE
+  } else {
+    cv <- sd(col_sums) / mean(col_sums)
+    is_constant <- cv < cv_threshold
+
+    if (!is_constant) {
+      if (!silent) warning("Column sums vary - data may not represent relative abundances.")
+      is_rel <- FALSE
+    }
+  }
+
+  # 2. Check for negative values
   if (any(df_num < 0, na.rm = TRUE)) {
     if (!silent) warning("Negative values present - data likely log-transformed.")
     is_rel <- FALSE
   }
 
-  # Check if values are proportions (0 ≤ x ≤ 1(00))
+  # 3. Check if values are proportions (0 ≤ x ≤ 1(00))
   # Upper limit needs to be a bit higher to account for minor floating-point
   # precision errors
-  if (!all(df_num >= 0 & df_num <= 1.02 | df_num <= 102, na.rm = TRUE)) {
-    if (!silent) warning("Values outside [0,1] or [0,100] - data may not be relative abundances.")
+  valid_range <- all(df_num >= 0 & (df_num <= 1.02 | df_num <= 102), na.rm = TRUE)
+  if (!valid_range) {
+    if (!silent) warning("Values outside [0,1] or [0,100] - data may not represent relative abundances.")
     is_rel <- FALSE
   }
   return(is_rel)
@@ -103,7 +124,7 @@
   if (ncol(df_num) == 0) {
     # if (!silent) warning("No numeric columns found - cannot assess count data.")
     # return(FALSE)
-    stop(("No numeric columns found - cannot assess count data."))
+    stop("No numeric columns found - cannot assess count data.")
   }
 
   # 1. Check for non-integer values (indicative of transformation) with tolerance for floating-point precision
