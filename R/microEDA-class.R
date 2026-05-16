@@ -368,11 +368,11 @@ setMethod("filter_history<-", "microEDA", function(object, value) {
 
   if (any(abund_tab < 0, na.rm = TRUE)) .show_error("OTU table contains negative values.")
 
-  if (!.is_proportion(abund_tab)) {
-    transforms <- NULL
-  } else {
+  if (.is_proportion(abund_tab, silent = TRUE)) {
     transforms <- "TSS"
-  }
+  } else if (.is_counts(abund_tab, silent = TRUE)) {
+    transforms <- NULL
+  } else stop("'tax_profile' contains neither counts nor relative abundances - data was likely transformed.")
 
   if (is.null(metadata)) {
     microbiome_exp <- new(
@@ -618,11 +618,11 @@ setMethod("filter_history<-", "microEDA", function(object, value) {
   # Make sure no reserved column names are in the metadata
   metadata <- .check_var_names(metadata)
 
-  if (!.is_proportion(abund_tab, silent = TRUE)) {
-    transforms <- NULL
-  } else {
+  if (.is_proportion(abund_tab, silent = TRUE)) {
     transforms <- "TSS"
-  }
+  } else if (.is_counts(abund_tab, silent = TRUE)) {
+    transforms <- NULL
+  } else stop("otu_table of 'tax_profile' contains neither counts nor relative abundances - data was likely transformed.")
 
   microbiome_exp <- new(
     "microEDA",
