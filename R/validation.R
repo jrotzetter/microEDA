@@ -67,21 +67,29 @@
 #'
 #' @param tax_profile A matrix or data frame containing taxonomic abundance data.
 #' Non-numeric columns are ignored.
-#' @param tolerance Numeric threshold for acceptable variation in column sums.
+#' @param cv_threshold Numeric threshold for coefficient of variation (CV) below which
+#' column sums are considered nearly constant (Default: 0.1). Used only if values are non-integer.
 #' @param silent `Logical`; if FALSE (default), warnings are issued for failed checks.
 #' If TRUE, the function runs silently.
 #'
 #' @details
 #' Determines whether the numeric columns in a taxonomic profile represent
-#' raw count data by verifying that: (1) values are non-negative integers,
-#' (2) column sums vary significantly (not constant like proportions),
-#' (3) values are outside typical proportion ranges (between 0 and 1, or 0 and 100),
-#' and (4) no negative or decimal values indicative of transformation (e.g., log, CLR).
+#' raw count data by verifying that:
+#' (1) values are non-negative integers (with floating-point tolerance),
+#' (2) there are no negative values,
+#' (3) not binary (0/1) data (presence/absence),
+#' (4) if library sizes (column sums) have low variation (CV < `cv_threshold`),
+#'    only flags as non-counts if values are also decimal or range between 0 and 1
+#'    (for count data with uniform sequencing depth).
 #'
 #' @returns `TRUE` if data meet all criteria for raw count data; `FALSE` otherwise.
 #' @noRd
-.is_counts <- function(tax_profile, tolerance = 0.3, silent = FALSE) {
+.is_counts <- function(tax_profile, cv_threshold = 0.1, silent = FALSE) {
   is_count <- TRUE
+
+  if (!is.matrix(tax_profile) && !is.data.frame(tax_profile)) {
+    stop("'tax_profile' must be a matrix or data frame.")
+  }
 
   # Identify numeric columns
   is_numeric <- if (is.matrix(tax_profile)) {
@@ -91,30 +99,50 @@
   }
   df_num <- tax_profile[, is_numeric, drop = FALSE]
 
-  # Check for non-integer values (indicative of transformation)
-  if (any(vapply(df_num, function(x) any(x != as.integer(x), na.rm = TRUE), logical(1L)), na.rm = TRUE)) {
+  # Check for no numeric data
+  if (ncol(df_num) == 0) {
+    # if (!silent) warning("No numeric columns found - cannot assess count data.")
+    # return(FALSE)
+    stop(("No numeric columns found - cannot assess count data."))
+  }
+
+  # 1. Check for non-integer values (indicative of transformation) with tolerance for floating-point precision
+  # sqrt(.Machine$double.eps) represents the tolerance (see base::all.equal)
+  has_decimal <- any(vapply(df_num, function(x) any(abs(x - round(x)) > sqrt(.Machine$double.eps), na.rm = TRUE), logical(1L)), na.rm = TRUE)
+  if (has_decimal) {
     if (!silent) warning("Decimal values present - data may be proportions or transformed.")
     is_count <- FALSE
   }
 
-  # Check for negative values
+  # 2. Check for negative values
   if (any(df_num < 0, na.rm = TRUE)) {
     if (!silent) warning("Negative values present - data is likely transformed.")
     is_count <- FALSE
   }
 
-  # Check if values are within proportion ranges (0–1 or 0–100)
-  if (all(df_num >= 0 & df_num <= 1.02, na.rm = TRUE) || all(df_num >= 0 & df_num <= 102, na.rm = TRUE)) {
-    if (!silent) warning("Values within [0,1] or [0,100] range - data may be proportions.")
+  # 3. Binary data check (presence/absence)
+  if (all(df_num == 0 | df_num == 1, na.rm = TRUE)) {
+    if (!silent) warning("Binary data (0s and 1s) detected - likely presence/absence, not raw counts.")
     is_count <- FALSE
   }
 
-  # Check if column sums are approximately constant (expected in proportions, not counts)
+  # 4. Use coefficient of variation (CV) of column sums
   col_sums <- colSums(df_num, na.rm = TRUE)
-  is_constant <- diff(range(col_sums)) < tolerance
-  if (is_constant) {
-    if (!silent) warning("Column sums are nearly constant - data may be proportions or transformed.")
+  if (mean(col_sums) == 0) {
+    if (!silent) warning("All column sums are zero - invalid count data.")
     is_count <- FALSE
+  } else {
+    cv <- sd(col_sums) / mean(col_sums)
+    # Only flag constant sums if values are non-integer
+    if (cv < cv_threshold) {
+      if (has_decimal) {
+        if (all(df_num >= 0 & df_num <= 1.02, na.rm = TRUE)) {
+          if (!silent) warning("Values in [0,1] range and low library size variation - likely proportions.")
+        } else if (!silent) warning("Low variation in library sizes and non-integer values - likely proportions.")
+        is_count <- FALSE
+      }
+      # Otherwise: allow integer counts even with low CV (for count data with uniform sequencing depth)
+    }
   }
   return(is_count)
 }
