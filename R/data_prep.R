@@ -603,6 +603,77 @@ agglomerate_taxa <- function(me,
 }
 
 
+#' Calculate taxon prevalence across samples
+#'
+#' Computes the prevalence of each taxon (proportion of samples with abundance
+#' above a threshold) with optional grouping by metadata variables. Automatically
+#' adjusts for zero thresholds to avoid inflated prevalence estimates.
+#'
+#' @param x A data.frame with taxon identifiers in a tax_ID column and numeric
+#' abundance columns.
+#' @param metadata (Optional) A data.frame with sample metadata, including the
+#' grouping variable.
+#' @param group_var (Optional) Name of the column in metadata to group by (e.g., "Treatment").
+#' @param min_abundance Minimum abundance threshold to count a sample as positive.
+#' If set to 0, uses .Machine$double.eps to avoid counting zero values.
+#' @return A data.frame with columns:
+#'   \item{Taxon}{Taxon identifier}
+#'   \item{Group}{Group name (or "All" if ungrouped)}
+#'   \item{Prevalence}{Percentage of samples with abundance >= min_abundance}
+#'   \item{Prevalence_n}{Count of positive samples / total samples}
+#'
+#' @details For ungrouped data, all samples are treated as one group ("All").
+#' For grouped data, joins x and metadata by sample name, then calculates prevalence
+#' within each level of group_var. Uses first() to preserve consistent metadata.
+#' @keywords internal
+#' @noRd
+.calculate_prevalence <- function(x, metadata = NULL, group_var = NULL, min_abundance = 0) {
+  is_numeric <- vapply(x, is.numeric, logical(1L))
+  abund_data <- x[is_numeric]
+  tax_ids <- x$tax_ID
+
+  min_abundance <- ifelse(min_abundance == 0, .Machine$double.eps, min_abundance)
+
+  if (is.null(group_var) && is.null(metadata)) {
+    # Ungrouped: count samples with abundance >= min_abundance
+    pass_threshold <- abund_data >= min_abundance
+    prevalence <- rowSums(pass_threshold, na.rm = TRUE)
+    n_samples <- ncol(abund_data)
+
+    result <- data.frame(
+      Taxon = tax_ids,
+      Group = "All",
+      Prevalence = (prevalence / n_samples) * 100,
+      Prevalence_n = paste(prevalence, "/", n_samples),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    # Grouped: calculate per group
+    df_long <- tidyr::pivot_longer(x,
+      cols = dplyr::all_of(names(abund_data)),
+      names_to = "Sample", values_to = "Abundance"
+    ) |>
+      dplyr::inner_join(metadata, by = "Sample")
+
+    result <- df_long |>
+      dplyr::group_by(.data[[group_var]], .data$tax_ID) |>
+      dplyr::summarise(
+        n_samples = dplyr::n(),
+        pass = sum(.data$Abundance >= min_abundance),
+        .groups = "drop"
+      ) |>
+      dplyr::rename(Group = .data[[group_var]], Taxon = .data$tax_ID) |>
+      dplyr::mutate(
+        Prevalence = (.data$pass / n_samples) * 100,
+        Prevalence_n = paste(.data$pass, "/", n_samples)
+      ) |>
+      dplyr::select(.data$Taxon, .data$Group, .data$Prevalence, .data$Prevalence_n)
+  }
+
+  return(result)
+}
+
+
 #' Prepare taxonomic profile for plotting
 #'
 #' Aggregates and filters taxa to a manageable number for visualization,
@@ -614,7 +685,12 @@ agglomerate_taxa <- function(me,
 #'    \item \code{Taxon}: Taxon name, with "Other" labeled by threshold.
 #'    \item \code{Sample}: Sample identifier.
 #'    \item \code{Abundance}: Abundance value.
+#'    \item \code{Group}: Group name (or "All" if ungrouped)
+#'    \item \code{Prevalence}: Percentage of samples with abundance >= min_abundance
+#'    \item \code{Prevalence_n}: Count of positive samples / total samples
 #'  }
+#'  \code{Group}, \code{Prevalence}, and \code{Prevalence_n} are only included
+#'  when \code{calculate_prevalence = TRUE}.
 #'
 #' @details
 #' Note that the abundance of the "Other" category in the final output may
@@ -636,7 +712,8 @@ agglomerate_taxa <- function(me,
                                  rm_missing = FALSE,
                                  transform = c("None", "TSS"),
                                  add_prefix = FALSE,
-                                 process_taxon = TRUE) {
+                                 process_taxon = TRUE,
+                                 calculate_prevalence = FALSE) {
   # Input validation
   if (!inherits(me, "microEDA") && !inherits(me, "phyloseq")) {
     stop("'me' must be a microEDA or phyloseq object.")
@@ -662,6 +739,14 @@ agglomerate_taxa <- function(me,
     stop("Abundance data contains negative values.")
   }
 
+  if (!is.null(group_var)) {
+    metadata <- data.frame(phyloseq::sample_data(me),
+      stringsAsFactors = FALSE
+    )[, group_var, drop = FALSE] |>
+      .check_var_names() |>
+      tibble::rownames_to_column("Sample")
+  }
+
   group_var_arg <- if (filter_by_group) group_var else NULL
 
   me <- filter_features(me,
@@ -676,7 +761,7 @@ agglomerate_taxa <- function(me,
   me <- agglomerate_taxa(me,
     tax_rank = tax_rank,
     rm_missing = rm_missing,
-    transform = transform,
+    transform = "None", # transformation should only be applied later for correct prevalence calculation
     add_prefix = add_prefix
   )
 
@@ -694,14 +779,13 @@ agglomerate_taxa <- function(me,
     abund_tab <- rbind(abund_tab, other_row)
   }
 
-  # Check if data is relative abundances or counts for plot labeling
-  if (suppressWarnings(.is_proportion(abund_tab))) {
-    is_rel_abund <- TRUE
-  } else if (suppressWarnings(.is_counts(abund_tab))) {
-    is_rel_abund <- FALSE
-  } else {
-    stop("Data is neither counts nor relative abundance - data was likely transformed.")
-  }
+  # Sum abundances of duplicate taxa across higher-level lineage variants.
+  # This is necessary for taxa with conflicting higher-level inconsistencies
+  # due to several entries for the same taxon existing per sample, introducing
+  # bias to summary statistics for the taxon (mean abundance, standard deviation, prevalence)
+  abund_tab <- abund_tab |>
+    dplyr::group_by(.data$tax_ID) |>
+    dplyr::summarize(dplyr::across(dplyr::where(is.numeric), ~ sum(., na.rm = TRUE)), .groups = "drop")
 
   # Pass to incrementing filter to reduce ntaxa
   abund_tab_reduced <- .apply_incrementing_filter(abund_tab,
@@ -709,16 +793,49 @@ agglomerate_taxa <- function(me,
     initial_threshold = 0
   )
 
+  # When prevalence should be available downstream, it has to be calculated
+  # before normalisation to ensure it is correctly calculated in case
+  # min_abundance represents counts
+  if (calculate_prevalence) {
+    if (!is.null(group_var)) {
+      prevalences <- .calculate_prevalence(abund_tab_reduced$data,
+        metadata = metadata,
+        group_var = group_var,
+        min_abundance = min_abundance
+      )
+    } else {
+      prevalences <- .calculate_prevalence(abund_tab_reduced$data, min_abundance = min_abundance)
+    }
+  }
+
+  # Check if data is relative abundances or counts for plot labeling
+  is_rel_abund <- suppressWarnings(.is_proportion(abund_tab_reduced$data))
+
+  if (!is_rel_abund && !suppressWarnings(.is_counts(abund_tab_reduced$data))) {
+    stop("Data is neither counts nor relative abundances - data was likely transformed.")
+  } else if (!is_rel_abund && transform == "TSS") {
+    abund_tab_reduced$data <- .apply_tss(abund_tab_reduced$data, prop_scale = 100)
+    is_rel_abund <- TRUE
+  } else {
+    is_rel_abund <- FALSE
+  }
+
   tax_abund <- abund_tab_reduced$data |>
     dplyr::rename(Taxon = "tax_ID") |>
-    # Sum abundances of duplicate taxa across higher-level lineage variants.
-    # This is necessary for taxa with conflicting higher-level inconsistencies
-    # due to several entries for the same taxon existing per sample, introducing
-    # bias to summary statistics for the taxon (mean abundance, standard deviation, prevalence)
-    dplyr::group_by(.data$Taxon) |>
-    dplyr::summarize(dplyr::across(dplyr::where(is.numeric), ~ sum(., na.rm = TRUE)), .groups = "drop") |>
     tidyr::pivot_longer(-.data$Taxon, names_to = "Sample", values_to = ifelse(is_rel_abund, "Relative_Abundance", "Abundance")) |>
     dplyr::arrange(.data$Sample)
+
+  # Add prevalences (and if needed group_var)
+  if (calculate_prevalence) {
+    if (is.null(group_var)) {
+      tax_abund <- dplyr::mutate(tax_abund, Group = "All") |>
+        dplyr::left_join(prevalences, by = c("Taxon", "Group"))
+    } else {
+      tax_abund <- dplyr::left_join(tax_abund, metadata, by = "Sample") |>
+        dplyr::rename(Group = .data[[group_var]]) |>
+        dplyr::left_join(prevalences, by = c("Taxon", "Group"))
+    }
+  }
 
   # Process tax_ID for plotting (markdown)
   if (process_taxon) {

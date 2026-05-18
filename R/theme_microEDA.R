@@ -29,5 +29,18 @@ theme_microEDA <- function(graph_type = NULL,
       )
     }
   }
+
+  if (graph_type == "heat") {
+    microEDA_theme <- base_theme +
+      ggplot2::theme(
+        axis.text.x.top = ggtext::element_markdown(vjust = 0.5),
+        axis.text.y = ggtext::element_markdown(),
+        legend.title = ggtext::element_markdown(size = 8),
+        axis.line = ggplot2::element_blank(), # hide axis line
+        axis.ticks = ggplot2::element_blank(), # hide axis ticks
+        legend.text = ggplot2::element_text(size = legend_text),
+        legend.key.height = ggplot2::unit(legend_key, "pt")
+      )
+  }
   return(microEDA_theme)
 }

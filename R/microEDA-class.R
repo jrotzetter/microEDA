@@ -372,7 +372,9 @@ setMethod("filter_history<-", "microEDA", function(object, value) {
     transforms <- "TSS"
   } else if (.is_counts(abund_tab, silent = TRUE)) {
     transforms <- NULL
-  } else stop("'tax_profile' contains neither counts nor relative abundances - data was likely transformed.")
+  } else {
+    stop("'tax_profile' contains neither counts nor relative abundances - data was likely transformed.")
+  }
 
   if (is.null(metadata)) {
     microbiome_exp <- new(
@@ -622,7 +624,9 @@ setMethod("filter_history<-", "microEDA", function(object, value) {
     transforms <- "TSS"
   } else if (.is_counts(abund_tab, silent = TRUE)) {
     transforms <- NULL
-  } else stop("otu_table of 'tax_profile' contains neither counts nor relative abundances - data was likely transformed.")
+  } else {
+    stop("otu_table of 'tax_profile' contains neither counts nor relative abundances - data was likely transformed.")
+  }
 
   microbiome_exp <- new(
     "microEDA",
