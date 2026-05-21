@@ -128,7 +128,7 @@
 #' @examples
 #' # Basic plot at Species level
 #' mpa <- microEDA(merged_metaphlan_profiles)
-#' plot_composition(mpa, "Species")
+#' plot_taxa_barchart(mpa, "Species")
 #'
 #' @importFrom phyloseq phyloseq sample_data
 #' @importFrom dplyr inner_join mutate group_by n_distinct
@@ -141,18 +141,18 @@
 #' @importFrom glue glue
 #'
 #' @export
-plot_composition <- function(me,
-                             tax_rank,
-                             group_var = NULL,
-                             facet_var = NULL,
-                             plot_title = NULL,
-                             group_labels = NULL,
-                             show_samples = TRUE,
-                             min_abundance = 0,
-                             min_prevalence = 0,
-                             as_relative = TRUE,
-                             filter_by_group = FALSE,
-                             ...) {
+plot_taxa_barchart <- function(me,
+                               tax_rank,
+                               group_var = NULL,
+                               facet_var = NULL,
+                               plot_title = NULL,
+                               group_labels = NULL,
+                               show_samples = TRUE,
+                               min_abundance = 0,
+                               min_prevalence = 0,
+                               as_relative = TRUE,
+                               filter_by_group = FALSE,
+                               ...) {
   stopifnot(inherits(me, "phyloseq"))
 
   if (!.is_counts(otu_table(me), silent = TRUE) && !.is_proportion(otu_table(me), silent = TRUE)) {
@@ -402,7 +402,7 @@ plot_composition <- function(me,
 #'
 #' @examples
 #' mpa <- microEDA(merged_metaphlan_profiles)
-#' plot_heatmap(mpa, "Species", prevalence_display = "fraction")
+#' plot_taxa_heatmap(mpa, "Species", prevalence_display = "fraction")
 #'
 #' @importFrom ggplot2 ggplot aes geom_tile scale_fill_gradient scale_x_discrete
 #' @importFrom ggplot2 scale_y_discrete labs theme element_blank
@@ -415,19 +415,19 @@ plot_composition <- function(me,
 #' @importFrom stats sd
 #'
 #' @export
-plot_heatmap <- function(me,
-                         tax_rank,
-                         group_var = NULL,
-                         plot_title = NULL,
-                         group_labels = NULL,
-                         color_by = c("abundance", "prevalence"),
-                         prevalence_display = c("percent", "fraction"),
-                         order_by = c("abundance", "prevalence", "alphabetical"),
-                         min_abundance = 0,
-                         min_prevalence = 0,
-                         as_relative = TRUE,
-                         filter_by_group = FALSE,
-                         ...) {
+plot_taxa_heatmap <- function(me,
+                              tax_rank,
+                              group_var = NULL,
+                              plot_title = NULL,
+                              group_labels = NULL,
+                              color_by = c("abundance", "prevalence"),
+                              prevalence_display = c("percent", "fraction"),
+                              order_by = c("abundance", "prevalence", "alphabetical"),
+                              min_abundance = 0,
+                              min_prevalence = 0,
+                              as_relative = TRUE,
+                              filter_by_group = FALSE,
+                              ...) {
   stopifnot(inherits(me, "phyloseq"))
 
   if (!.is_counts(otu_table(me), silent = TRUE) && !.is_proportion(otu_table(me), silent = TRUE)) {
