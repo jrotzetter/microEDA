@@ -704,6 +704,7 @@ agglomerate_taxa <- function(me,
                                  min_abundance = 0,
                                  min_prevalence = 0,
                                  ntaxa = 30,
+                                 increment = 0.1,
                                  group_var = NULL,
                                  abundance_criterion = c("prevalence", "mean"),
                                  filter_by_group = FALSE,
@@ -786,11 +787,16 @@ agglomerate_taxa <- function(me,
   abund_tab <- abund_tab |>
     dplyr::group_by(.data$tax_ID) |>
     dplyr::summarize(dplyr::across(dplyr::where(is.numeric), ~ sum(., na.rm = TRUE)), .groups = "drop")
+  # abund_tab <- rowsum(abund_tab[, vapply(abund_tab, is.numeric, FUN.VALUE = logical(1L))],
+  #                     group = abund_tab$tax_ID, na.rm = TRUE, reorder = TRUE)
+  # abund_tab <- data.frame(tax_ID = rownames(abund_tab), abund_tab, stringsAsFactors = FALSE)
+  # rownames(abund_tab) <- NULL
 
-  # Pass to incrementing filter to reduce ntaxa
+  # Pass to incrementing filter to reduce to ntaxa
   abund_tab_reduced <- .apply_incrementing_filter(abund_tab,
     ntaxa = ntaxa,
-    initial_threshold = 0
+    initial_threshold = 0,
+    increment = increment
   )
 
   # When prevalence should be available downstream, it has to be calculated
