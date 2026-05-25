@@ -75,7 +75,7 @@
 
   # Update target column
   taxa[is_unclass, idx] <- ifelse(last_valid == "", "Unclassified",
-    paste("Unclassified", last_valid)
+    paste0("Unclassified_", last_valid)
   )
 
   return(taxa)
@@ -137,18 +137,18 @@
     # Replace unclassified with "Unclassified <Parent>" using last valid name
     col[is_unclass] <- ifelse(last_valid[is_unclass] == "",
       "Unclassified",
-      paste("Unclassified", last_valid[is_unclass])
+      paste0("Unclassified_", last_valid[is_unclass])
     )
     taxa[, j] <- col
 
     # Update last_valid with names of "true" taxa (not "Unclassified" or
     # "Unclassified <Parent>") so they propagate to lower ranks
-    true_name <- !grepl("^Unclassified($| )", taxa[, j])
+    true_name <- !grepl("^Unclassified($| |_)", taxa[, j])
     last_valid[true_name] <- taxa[true_name, j]
   }
 
   if (!silent) {
-    all_unclass <- apply(taxa, 1, function(x) all(grepl("^Unclassified($| )", x)))
+    all_unclass <- apply(taxa, 1, function(x) all(grepl("^Unclassified($| |_)", x)))
     n_all_unclass <- sum(all_unclass)
     if (n_all_unclass > 0) {
       warning(n_all_unclass, " row(s) are fully unclassified across all ranks.")
