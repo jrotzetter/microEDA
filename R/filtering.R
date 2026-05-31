@@ -548,14 +548,18 @@ filter_features <- function(me,
     filtered_data <- kept_rows
   }
 
+  # Round to address tiny rounding errors that accumulate during repeated
+  # additions when increment is sufficiently small
+  rounded_threshold <- round(threshold, 1)
+
   # Rename "Other" to reflect threshold
   other_index <- which(filtered_data[[tax_column]] == "Other")
   if (length(other_index) > 0) {
-    filtered_data[[tax_column]][other_index] <- paste0("Other (<", threshold, "%)")
+    filtered_data[[tax_column]][other_index] <- paste0("Other (<", rounded_threshold, "%)")
   }
 
   if (verbose && threshold > 0) {
-    message("Taxa below ", threshold, "% relative abundance were merged into 'Other'.")
+    message("Taxa below ", rounded_threshold, "% relative abundance were merged into 'Other'.")
   }
 
   # Return subset data and final 'Other' threshold
