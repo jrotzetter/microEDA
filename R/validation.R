@@ -41,7 +41,7 @@
   is_numeric <- if (is.matrix(tax_profile)) {
     rep(is.numeric(tax_profile), ncol(tax_profile))
   } else {
-    vapply(tax_profile, is.numeric, logical(1))
+    vapply(tax_profile, is.numeric, logical(1L))
   }
   df_num <- tax_profile[, is_numeric, drop = FALSE]
 

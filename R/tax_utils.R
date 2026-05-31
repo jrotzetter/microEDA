@@ -68,32 +68,45 @@
 #' to their full names (e.g., "Phylum", "Genus").
 #'
 #' @param tax_rank `Character` vector with abbreviated or lowercase taxonomic rank name.
+#' @param return_plural `Logical`. Return the plural form of the full rank name.
 #' @return `Character` vector with the full rank name (e.g., "Family") or the
 #' input vector if tax_rank does not map to valid taxonomic ranks.
 #' @keywords internal
 #' @noRd
-.get_full_tax_rank <- function(tax_rank) {
-  lookup <- c(
-    "k" = "Kingdom",
-    "p" = "Phylum",
-    "c" = "Class",
-    "o" = "Order",
-    "f" = "Family",
-    "g" = "Genus",
-    "s" = "Species",
-    "t" = "Strain",
-    "kingdom" = "Kingdom",
-    "phylum" = "Phylum",
-    "class" = "Class",
-    "order" = "Order",
-    "family" = "Family",
-    "genus" = "Genus",
-    "species" = "Species",
-    "strain" = "Strain"
+.get_full_tax_rank <- function(tax_rank, return_plural = FALSE) {
+  # Define singular and plural forms
+  singular <- c(
+    "k" = "Kingdom", "kingdom" = "Kingdom",
+    "p" = "Phylum", "phylum" = "Phylum",
+    "c" = "Class", "class" = "Class",
+    "o" = "Order", "order" = "Order",
+    "f" = "Family", "family" = "Family",
+    "g" = "Genus", "genus" = "Genus",
+    "s" = "Species", "species" = "Species",
+    "t" = "Strain", "strain" = "Strain"
   )
+
+  plural <- c(
+    "k" = "Kingdoms", "kingdom" = "Kingdoms",
+    "p" = "Phyla", "phylum" = "Phyla",
+    "c" = "Classes", "class" = "Classes",
+    "o" = "Orders", "order" = "Orders",
+    "f" = "Families", "family" = "Families",
+    "g" = "Genera", "genus" = "Genera",
+    "s" = "Species", "species" = "Species",
+    "t" = "Strains", "strain" = "Strains"
+  )
+
+  # Select lookup table based on plural flag
+  lookup <- if (return_plural) plural else singular
+
+  # Match case-insensitively
   result <- lookup[tolower(tax_rank)]
+
+  # Return original input if no match
   if (is.na(result)) {
     return(tax_rank)
   }
+
   unname(result)
 }

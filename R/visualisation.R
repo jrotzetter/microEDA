@@ -153,7 +153,10 @@ plot_taxa_barchart <- function(me,
                                as_relative = TRUE,
                                filter_by_group = FALSE,
                                ...) {
-  stopifnot(inherits(me, "phyloseq"))
+  # Input validation
+  if (!inherits(me, "phyloseq")) {
+    stop("'me' must be a microEDA or phyloseq object.")
+  }
 
   if (!.is_counts(otu_table(me), silent = TRUE) && !.is_proportion(otu_table(me), silent = TRUE)) {
     stop("'otu_table' is neither counts nor relative abundance - data was likely transformed.")
@@ -428,7 +431,10 @@ plot_taxa_heatmap <- function(me,
                               as_relative = TRUE,
                               filter_by_group = FALSE,
                               ...) {
-  stopifnot(inherits(me, "phyloseq"))
+  # Input validation
+  if (!inherits(me, "phyloseq")) {
+    stop("'me' must be a microEDA or phyloseq object.")
+  }
 
   if (!.is_counts(otu_table(me), silent = TRUE) && !.is_proportion(otu_table(me), silent = TRUE)) {
     stop("'otu_table' is neither counts nor relative abundance - data was likely transformed.")
