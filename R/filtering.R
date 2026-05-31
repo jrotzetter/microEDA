@@ -271,6 +271,11 @@ filter_features <- function(me,
     warning("One of 'min_abundance' or 'min_prevalence' is zero while the other is not. This may lead to unintended filtering behavior as the zero threshold will pass all values.")
   }
 
+  if (min_abundance == 0 && min_prevalence == 0) {
+    warning("Both 'min_abundance' and 'min_prevalence' are 0. No filtering will be applied.")
+    return(me)
+  }
+
   abund_data <- as(phyloseq::otu_table(me), "matrix")
   taxa_names <- rownames(abund_data)
 
