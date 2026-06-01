@@ -18,6 +18,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports: 
     ape (>= 5.8.1),
+    ComplexUpset (>= 1.3.6),
     dplyr (>= 1.2.1),
     forcats (>= 1.0.1),
     ggplot2 (>= 4.0.2),

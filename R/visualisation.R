@@ -626,3 +626,255 @@ plot_taxa_heatmap <- function(me,
   }
   return(p)
 }
+
+
+#' Create an UpSet Plot of Shared and Unique Taxa
+#'
+#' Generates a ggplot2-based UpSet plot to visualize the intersection patterns of
+#' taxa across different sample groups.
+#' This provides a scalable alternative to Venn diagrams for microbiome data.
+#'
+#' @param me A `microEDA` or `phyloseq` object containing OTU table, taxonomy, and sample data.
+#' @param tax_rank `Character` string specifying the taxonomic rank to plot
+#'   (e.g., "Phylum", "Family"). Must be a valid rank in the taxonomy table.
+#' @param group_var `Character` string indicating a sample metadata variable
+#'   to group samples.
+#' @param plot_title Optional `character` string for the plot title. If `NULL`,
+#'   a default title is generated based on `tax_rank`.
+#' @param show_names `Logical`. If `TRUE`, displays taxon names on intersection
+#'   bars with italicized formatting. Default is `FALSE`.
+#' @param group_labels Named character `vector` mapping old group names to
+#'   new labels (e.g., `c("Old" = "New")`).
+#' @param min_abundance `Numeric` value. Minimum abundance threshold for a feature to be retained.
+#'   Must be non-negative. Features with abundance below this are considered absent.
+#' @param min_prevalence `Numeric` value. Minimum prevalence required for retention.
+#'   If value is < 1, interpreted as proportion of samples; otherwise, as absolute number of samples.
+#' @param filter_by_group `Logical`. If `FALSE` (default), filtering is applied
+#'   globally across all samples even if `group_var` is specified. This allows
+#'   using `group_var` for stratification in plotting without affecting the
+#'   filtering scope. If `TRUE`, filtering is applied within each group
+#'   defined by `group_var` and `group_requirement`. See [filter_features] for more details on filtering arguments.
+#' @param text_size `Numeric`. Font size for taxon labels when
+#'   `show_names = TRUE`. Default is 2.
+#' @param ... Additional arguments for fine-tuning. Can include:
+#'   \itemize{
+#'     \item `abundance_criterion`: `Character` string. Criterion to use for filtering:
+#'   \describe{
+#'     \item{\code{prevalence}:}{Retain features present in at least `min_prevalence` samples
+#'       (within group if `group_var` is used) and with abundance >= `min_abundance`
+#'       in those samples.}
+#'     \item{\code{mean}:}{Also requires that the mean abundance across samples (or group)
+#'       is >= `min_abundance`.}
+#'   }
+#'   Default: `"prevalence"`.
+#'     \item `group_requirement`: `Character` string. When `group_var` is specified, determines
+#'   whether the filter criterion must be met in `"any"` group or `"all"` groups.
+#'   Default: `"any"`.
+#'     \item `keep_filtered`: Whether to keep filtered out taxa as "Other"  (Default: `TRUE`). Takes effect only for `microEDA` objects.
+#'     \item `rm_missing`: Whether to remove taxa with missing names (Default: `FALSE`).
+#'   }
+#'
+#' @return A `ggplot` object.
+#'
+#' @details
+#' The function performs the following steps:
+#' \enumerate{
+#'   \item Validates the input `me` object.
+#'   \item Filters taxa by `min_abundance`, `min_prevalence`.
+#'   \item Aggregates counts by `tax_rank`.
+#'   \item Determines taxon presence/absence per sample group.
+#'   \item Constructs an UpSet plot using the `ComplexUpset` package.
+#' }
+#'
+#' Taxon names are formatted in italics when `show_names = TRUE`.
+#'
+#' @examples
+#' data(GlobalPatterns, package = "phyloseq")
+#' plot_taxa_upset(GlobalPatterns, "Phylum", "SampleType")
+#'
+#' @importFrom rlang sym
+#' @importFrom dplyr arrange inner_join mutate filter group_by n_distinct reframe
+#' @importFrom tidyr replace_na pivot_wider all_of
+#' @importFrom glue glue
+#' @importFrom stringr str_replace str_replace_all str_detect str_c
+#' @importFrom tibble rownames_to_column
+#' @importFrom ggplot2 ylab
+#'
+#' @export
+plot_taxa_upset <- function(me,
+                            tax_rank,
+                            group_var,
+                            plot_title = NULL,
+                            show_names = FALSE,
+                            group_labels = NULL,
+                            min_abundance = 0,
+                            min_prevalence = 0,
+                            filter_by_group = FALSE,
+                            text_size = 2,
+                            ...) {
+  # Input validation
+  if (!inherits(me, "phyloseq")) {
+    stop("'me' must be a microEDA or phyloseq object.")
+  }
+
+  if (missing(group_var) || is.null(group_var)) {
+    stop("'group_var' can't be missing! A variable of interest for the intersections is needed.")
+  }
+
+  if (!.is_counts(otu_table(me), silent = TRUE) && !.is_proportion(otu_table(me), silent = TRUE)) {
+    stop("'otu_table' is neither counts nor relative abundance - data was likely transformed.")
+  }
+
+  if (!.is_valid_rank(tax_rank)) {
+    stop(.valid_ranks_msg)
+  }
+  tax_rank <- .get_full_tax_rank(tax_rank) # In case it was abbreviated
+
+  defaults <- list(
+    abundance_criterion = "prevalence",
+    group_requirement = "any", # Only takes effect when group_var != NULL
+    keep_filtered = TRUE,
+    rm_missing = FALSE
+  )
+  # Handle optional ellipsis arguments
+  arglist <- list(...)
+
+  arglist <- .warn_invalid_args(allowed = names(defaults), arglist = arglist)
+
+  arglist <- utils::modifyList(defaults, arglist)
+
+  if (.check_sample_data(me)) {
+    if (!is.null(group_var) && !(group_var %in% names(phyloseq::sample_data(me)))) {
+      stop("'group_var' not found in sample metadata.")
+    }
+
+    if (!is.null(group_labels)) {
+      phyloseq::sample_data(me) <- .rename_values(phyloseq::sample_data(me), group_var, group_labels)
+    }
+
+    metadata <- data.frame(phyloseq::sample_data(me),
+      stringsAsFactors = FALSE
+    )[, group_var, drop = FALSE] |>
+      .check_var_names() |>
+      tibble::rownames_to_column("Sample")
+
+    if (is.factor(metadata[[group_var]])) {
+      metadata[[group_var]] <- as.character(metadata[[group_var]])
+    }
+    group_var_sym <- rlang::sym(group_var)
+  } else {
+    stop("Can't use 'group_var' without sample metadata!")
+  }
+
+  tax_abund <- .prepare_tax_profile(me,
+    tax_rank = tax_rank,
+    min_abundance = min_abundance,
+    min_prevalence = min_prevalence,
+    ntaxa = phyloseq::ntaxa(me),
+    group_var = group_var,
+    abundance_criterion = arglist$abundance_criterion,
+    filter_by_group = filter_by_group,
+    group_requirement = arglist$group_requirement,
+    keep_filtered = arglist$keep_filtered,
+    rm_missing = arglist$rm_missing,
+    transform = "None",
+    add_prefix = FALSE,
+    process_taxon = FALSE,
+    calculate_prevalence = FALSE
+  )
+
+  if (is.null(plot_title) && !is.null(tax_rank)) {
+    plot_title <- paste0("Shared and unique ", .get_full_tax_rank(tax_rank, return_plural = TRUE))
+  }
+
+  tax_presence <- tax_abund |>
+    dplyr::arrange(.data$Sample) |>
+    dplyr::inner_join(metadata, by = "Sample") |>
+    dplyr::mutate(!!group_var_sym := tidyr::replace_na(.data[[group_var]], "Unknown")) |>
+    dplyr::group_by(.data[[group_var]], .data$Sample) |>
+    dplyr::filter(.data$Abundance > min_abundance) |>
+    dplyr::group_by(.data[[group_var]]) |>
+    dplyr::mutate(num_samples = dplyr::n_distinct(.data$Sample)) |>
+    dplyr::mutate(
+      !!group_var_sym := glue::glue("{.data[[group_var]]} (n={.data$num_samples})"),
+      !!group_var_sym := stringr::str_replace_all(.data[[group_var]], "_", " ")
+    ) |>
+    dplyr::reframe("Taxon" = unique(.data$Taxon)) |>
+    dplyr::group_by(.data$Taxon) |>
+    dplyr::mutate(presence = TRUE) |>
+    tidyr::pivot_wider(names_from = tidyr::all_of(group_var), values_from = "presence", values_fill = FALSE)
+
+  condition <- setdiff(names(tax_presence), "Taxon")
+
+  if (show_names) {
+    italic_label <- tax_presence |>
+      dplyr::mutate(
+        # Handle '_unclassified' - capture group before it
+        Taxon = stringr::str_replace(.data$Taxon, "^(.*)_unclassified$", "Unclass\\.~italic('\\1')"),
+        # Taxon = stringr::str_replace(Taxon, "^(.*)_unclassified$", "Unclassified\nitalic('\\1')"),
+        # Handle 'Unclassified <name>' -> 'Unclass.~italic(name)'
+        Taxon = stringr::str_replace(.data$Taxon, "^Unclassified\\s+(.*)$", "Unclass.~italic('\\1')"),
+        # Wrap any remaining plain names (that don't already have ~italic) in italic()
+        # to prevent nested italic. This is to ensure "Unclass."~italic('...') stays "flat"
+        Taxon = dplyr::if_else(
+          !stringr::str_detect(.data$Taxon, "~italic\\("),
+          stringr::str_c("italic('", .data$Taxon, "')"),
+          .data$Taxon
+        ),
+        # Replace underscores with ~ for spacing in plotmath
+        Taxon = stringr::str_replace_all(.data$Taxon, "_", "~"),
+        # Collapse multiple tildes into one
+        Taxon = stringr::str_replace_all(.data$Taxon, "~+", "~"),
+        # Avoid leading/trailing tildes
+        Taxon = stringr::str_replace_all(.data$Taxon, "^~|~$", ""),
+        # Special case: revert "italic('Other')" to just 'Other'
+        Taxon = stringr::str_replace(
+          .data$Taxon,
+          "^italic\\('Other([^']*)'\\)$",
+          "'Other\\1'"
+        )
+      )
+
+    ComplexUpset::upset(tax_presence,
+      condition,
+      name = plot_title,
+      set_sizes = ComplexUpset::upset_set_size() + ggplot2::ylab("Total Taxa"),
+      base_annotations = list(
+        "Intersection size" = (
+          ComplexUpset::intersection_size(
+            bar_number_threshold = 1,
+            color = "grey9",
+            fill = "grey80"
+          )
+          + ggplot2::geom_text(
+              mapping = ggplot2::aes(label = italic_label$Taxon),
+              position = ggplot2::position_stack(),
+              na.rm = TRUE,
+              vjust = 1,
+              size = text_size,
+              parse = TRUE
+            )
+        )
+      ),
+      width_ratio = 0.15,
+      height_ratio = 0.2
+    )
+  } else {
+    ComplexUpset::upset(tax_presence,
+      condition,
+      name = plot_title,
+      set_sizes = ComplexUpset::upset_set_size() + ggplot2::ylab("Total Taxa"),
+      base_annotations = list(
+        "Intersection size" = (
+          ComplexUpset::intersection_size(
+            bar_number_threshold = 1,
+            color = "grey9",
+            fill = "grey80"
+          )
+        )
+      ),
+      width_ratio = 0.15,
+      height_ratio = 0.2
+    )
+  }
+}
