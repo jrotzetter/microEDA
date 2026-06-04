@@ -22,6 +22,7 @@ Imports:
     dplyr (>= 1.2.1),
     forcats (>= 1.0.1),
     ggplot2 (>= 4.0.2),
+    ggsankeyfier (>= 0.1.8),
     ggtext (>= 0.1.2),
     glue (>= 1.8.1),
     methods,

@@ -77,7 +77,10 @@ Default: \code{"prevalence"}.
 whether the filter criterion must be met in \code{"any"} group or \code{"all"} groups.
 Default: \code{"any"}.
 \item \code{keep_filtered}: Whether to keep filtered out taxa as "Other"  (Default: \code{TRUE}). Takes effect only for \code{microEDA} objects.
-\item \code{rm_missing}: Whether to remove taxa with missing names  (Default: \code{FALSE}).
+\item \code{rm_missing}: \code{Logical.} If \code{TRUE}, removes taxa with missing/unclassified entries
+at the specified rank. If \code{FALSE}, fills missing values by propagating the
+last known ancestor, labeling them as "Unclassified \emph{Last_Known_Parent_Clade}"
+(e.g., "Unclassified Enterobacteriaceae"). (Default: \code{FALSE}).
 \item \code{process_taxon}: Whether to clean taxon names (remove underscores, return in italic). (Default: \code{TRUE}).
 }}
 }

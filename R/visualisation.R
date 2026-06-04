@@ -107,7 +107,10 @@
 #'   whether the filter criterion must be met in `"any"` group or `"all"` groups.
 #'   Default: `"any"`.
 #'     \item `keep_filtered`: Whether to keep filtered out taxa as "Other"  (Default: `TRUE`). Takes effect only for `microEDA` objects.
-#'     \item `rm_missing`: Whether to remove taxa with missing names  (Default: `FALSE`).
+#'     \item `rm_missing`: `Logical.` If `TRUE`, removes taxa with missing/unclassified entries
+#'   at the specified rank. If `FALSE`, fills missing values by propagating the
+#'   last known ancestor, labeling them as "Unclassified _Last_Known_Parent_Clade_"
+#'   (e.g., "Unclassified Enterobacteriaceae"). (Default: `FALSE`).
 #'     \item `process_taxon`: Whether to clean taxon names (remove underscores, return in italic). (Default: `TRUE`).
 #'   }
 #'
@@ -381,7 +384,10 @@ plot_taxa_barchart <- function(me,
 #'   whether the filter criterion must be met in `"any"` group or `"all"` groups.
 #'   Default: `"any"`.
 #'     \item `keep_filtered`: Whether to keep filtered out taxa as "Other" (Default: `TRUE`). Takes effect only for `microEDA` objects.
-#'     \item `rm_missing`: Whether to remove taxa with missing names (Default: `FALSE`).
+#'     \item `rm_missing`: `Logical.` If `TRUE`, removes taxa with missing/unclassified entries
+#'   at the specified rank. If `FALSE`, fills missing values by propagating the
+#'   last known ancestor, labeling them as "Unclassified _Last_Known_Parent_Clade_"
+#'   (e.g., "Unclassified Enterobacteriaceae"). (Default: `FALSE`).
 #'     \item `process_taxon`: Whether to clean taxon names (remove underscores, return in italic). (Default: `TRUE`).
 #'     \item `low_color`, `high_color`: Colours for low and high ends of the gradient. (Default: `"white"` and `"red"`)
 #'   }
@@ -671,7 +677,10 @@ plot_taxa_heatmap <- function(me,
 #'   whether the filter criterion must be met in `"any"` group or `"all"` groups.
 #'   Default: `"any"`.
 #'     \item `keep_filtered`: Whether to keep filtered out taxa as "Other"  (Default: `TRUE`). Takes effect only for `microEDA` objects.
-#'     \item `rm_missing`: Whether to remove taxa with missing names (Default: `FALSE`).
+#'     \item `rm_missing`: `Logical.` If `TRUE`, removes taxa with missing/unclassified entries
+#'   at the specified rank. If `FALSE`, fills missing values by propagating the
+#'   last known ancestor, labeling them as "Unclassified _Last_Known_Parent_Clade_"
+#'   (e.g., "Unclassified Enterobacteriaceae"). (Default: `FALSE`).
 #'   }
 #'
 #' @return A `ggplot` object.
@@ -877,4 +886,372 @@ plot_taxa_upset <- function(me,
       height_ratio = 0.2
     )
   }
+}
+
+
+#' Create a Sankey Plot of Taxonomic Abundances
+#'
+#' Visualizes the flow of taxa across hierarchical taxonomic ranks (e.g.,
+#' Kingdom -> Phylum -> Class -> Order -> Family -> Genus -> Species) using a Sankey diagram.
+#' If multiple samples are provided or `samples = NULL` (default), mean abundances
+#' across samples are used. The number of displayed taxa is limited to `ntaxa`
+#' to avoid visual clutter.
+#'
+#' @param me A `microEDA` or `phyloseq` object containing OTU table, tax_table, and optionally sample_data.
+#' @param tax_rank `Character` string specifying the taxonomic rank to agglomerate at
+#'   (e.g., "genus", "family").
+#' @param samples Optional `character` vector of sample names to include. If `NULL`, all samples are used.
+#' @param group_var Optional name of a variable in `sample_data(me)` to group samples.
+#'   Used for filtering and labeling if `filter_by_group = TRUE`.
+#' @param plot_title Optional `character` string for the plot title. If `NULL`,
+#'   a default title is generated based on the number of samples.
+#' @param rm_missing `Logical.` If `TRUE`, removes taxa with missing/unclassified entries
+#'   at the specified rank. If `FALSE`, fills missing values by propagating the
+#'   last known ancestor, labeling them as "Unclassified _Last_Known_Parent_Clade_"
+#'   (e.g., "Unclassified Enterobacteriaceae"). (Default: `FALSE`).
+#' @param group_labels Named character `vector` mapping old group names to
+#'   new labels (e.g., `c("Old" = "New")`).
+#' @param min_abundance `Numeric` value. Minimum abundance threshold for a feature to be retained.
+#'   Must be non-negative. Features with abundance below this are considered absent.
+#' @param min_prevalence `Numeric` value. Minimum prevalence required for retention.
+#'   If value is < 1, interpreted as proportion of samples; otherwise, as absolute number of samples.features.
+#' @param as_relative `Logical`. If `TRUE`, applies relative abundance transformation (TSS)
+#'   to the input counts. If `FALSE`, uses raw counts. (Default: `TRUE`).
+#' @param filter_by_group `Logical`. If `FALSE` (default), filtering is applied
+#'   globally across all samples even if `group_var` is specified. This allows
+#'   using `group_var` for stratification in plotting without affecting the
+#'   filtering scope. If `TRUE`, filtering is applied within each group
+#'   defined by `group_var` and `group_requirement`. See [filter_features] for more details on filtering arguments.
+#' @param text_size Label size of taxa names (Default: 3).
+#' @param ntaxa Number of top taxa to display before grouping into "Other" (Default: 30).
+#' @param ... Additional arguments for fine-tuning. Can include:
+#'   \itemize{
+#'     \item `abundance_criterion`: `Character` string. Criterion to use for filtering:
+#'   \describe{
+#'     \item{\code{prevalence}:}{Retain features present in at least `min_prevalence` samples
+#'       (within group if `group_var` is used) and with abundance >= `min_abundance`
+#'       in those samples.}
+#'     \item{\code{mean}:}{Also requires that the mean abundance across samples (or group)
+#'       is >= `min_abundance`.}
+#'   }
+#'   Default: `"prevalence"`.
+#'     \item `group_requirement`: `Character` string. When `group_var` is specified, determines
+#'   whether the filter criterion must be met in `"any"` group or `"all"` groups.
+#'   Default: `"any"`.
+#'     \item `keep_filtered`: Whether to keep filtered out taxa as "Other"  (Default: `TRUE`). Takes effect only for `microEDA` objects.
+#'     \item `ncp`: Number of control points on the Bezier curve that forms the edge.
+#'     Larger numbers will result in smoother curves, but cost more computational time. (Default: 100).
+#'     \item `slope`: Slope parameter for the Bezier curves used to depict the edges.(Default: 0.5).
+#'   }
+#'
+#' @return A `ggplot` object displaying the Sankey diagram.
+#'
+#' @examples
+#' data(GlobalPatterns, package = "phyloseq")
+#' plot_taxa_sankey(GlobalPatterns, tax_rank = "Order", samples = "Even3")
+#'
+#' @importFrom ggsankeyfier geom_sankeynode geom_sankeyedge pivot_stages_longer StatSankeynode
+#' @importFrom ggplot2 ggplot aes labs scale_fill_viridis_c scale_x_discrete
+#' @importFrom ggtext geom_richtext
+#' @importFrom stringi stri_replace_all_regex stri_replace_first_regex
+#' @importFrom tidyr pivot_longer
+#'
+#' @export
+plot_taxa_sankey <- function(me,
+                             tax_rank,
+                             samples = NULL,
+                             group_var = NULL,
+                             plot_title = NULL,
+                             rm_missing = FALSE,
+                             group_labels = NULL,
+                             min_abundance = 0,
+                             min_prevalence = 0,
+                             as_relative = TRUE,
+                             filter_by_group = FALSE,
+                             text_size = 3,
+                             ntaxa = 30,
+                             ...) {
+  # Input validation
+  if (!inherits(me, "phyloseq")) {
+    stop("'me' must be a microEDA or phyloseq object.")
+  }
+
+  if (!.is_counts(otu_table(me), silent = TRUE) && !.is_proportion(otu_table(me), silent = TRUE)) {
+    stop("'otu_table' is neither counts nor relative abundance - data was likely transformed.")
+  }
+
+  if (!.is_valid_rank(tax_rank)) {
+    stop(.valid_ranks_msg)
+  }
+  tax_rank <- .get_full_tax_rank(tax_rank) # In case it was abbreviated
+
+  if (!tax_rank %in% phyloseq::rank_names(me)) {
+    stop(
+      "Rank '", tax_rank, "' not present in tax_table. Available ranks: ",
+      paste(phyloseq::rank_names(tax_rank), collapse = ", ")
+    )
+  }
+  rank_index <- which(phyloseq::rank_names(me) == tax_rank)
+  tax_ranks <- phyloseq::rank_names(me)[1:rank_index]
+
+  if (as_relative) {
+    transform <- "TSS"
+    abundance_type <- "Relative\nAbundance\n(%)"
+  } else {
+    transform <- "None"
+    abundance_type <- "Abundance"
+  }
+
+  defaults <- list(
+    abundance_criterion = "prevalence",
+    group_requirement = "any", # Only takes effect when group_var != NULL
+    keep_filtered = TRUE,
+    slope = 0.5,
+    ncp = 100
+  )
+  # Handle optional ellipsis arguments
+  arglist <- list(...)
+
+  arglist <- .warn_invalid_args(allowed = names(defaults), arglist = arglist)
+
+  arglist <- utils::modifyList(defaults, arglist)
+
+  arglist$abundance_criterion <- match.arg(arglist$abundance_criterion, choices = c("prevalence", "mean"))
+  arglist$group_requirement <- match.arg(arglist$group_requirement, choices = c("any", "all"))
+
+  if (!is.null(group_var)) {
+    if (.check_sample_data(me)) {
+      if (!(group_var %in% names(phyloseq::sample_data(me)))) {
+        stop("'group_var' not found in sample metadata.")
+      }
+
+      if (!is.null(group_labels)) {
+        phyloseq::sample_data(me) <- .rename_values(phyloseq::sample_data(me), group_var, group_labels)
+      }
+    } else {
+      stop("Can't use 'group_var' without sample metadata!")
+    }
+  }
+
+  group_var_arg <- if (filter_by_group) group_var else NULL
+
+  if (!is.null(samples)) {
+    samples <- intersect(phyloseq::sample_names(me), samples)
+    if (length(samples) < 1) stop("No matching sample(s) found.")
+
+    me <- phyloseq::prune_samples(samples, me)
+
+    if (is.null(plot_title)) {
+      if (length(samples) > 1) {
+        plot_title <- paste0("Mean Relative Abundance for samples:", " *", toString(samples), "*")
+      } else {
+        plot_title <- paste0("Relative Abundance for sample:", " *", samples, "*")
+      }
+    }
+  } else if (is.null(plot_title)) {
+    plot_title <- "Mean Relative Abundance over all samples"
+  }
+
+  # Temporarily enable immediate warning print so it appears before agglomeration warnings
+  old_warn <- options(warn = 1)
+  on.exit(options(old_warn), add = TRUE)
+
+  me <- filter_features(me,
+    min_abundance = min_abundance,
+    min_prevalence = min_prevalence,
+    group_var = group_var_arg,
+    abundance_criterion = arglist$abundance_criterion,
+    group_requirement = arglist$group_requirement,
+    keep_filtered = arglist$keep_filtered
+  )
+
+  me <- agglomerate_taxa(me,
+    tax_rank = tax_rank,
+    rm_missing = rm_missing,
+    transform = transform,
+    add_prefix = FALSE
+  )
+
+  rank_index <- which(phyloseq::rank_names(me) == tax_rank)
+  tax_ranks <- phyloseq::rank_names(me)[1:rank_index]
+
+  # Calculate the mean per Taxon if there is more than 1 sample
+  if (phyloseq::nsamples(me) > 1) {
+    abundance_type <- paste0("Mean\n", abundance_type)
+
+    merged <- data.frame(tax_table(me), phyloseq::otu_table(me))
+
+    sample_cols <- names(which(vapply(merged, is.numeric, logical(1L))))
+
+    merged_long <- pivot_longer(merged, cols = all_of(sample_cols), names_to = "Sample", values_to = "Abundance")
+
+    mean_by_rank <- lapply(tax_ranks, function(rank_col) {
+      merged_long |>
+        # CRITICAL STEP: Sum / aggregate abundances of all OTUs belonging to the
+        # same Taxon WITHIN each Sample, otherwise the mean will reflect the
+        # mean abundance within OTUs not the Taxon
+        dplyr::group_by(dplyr::across(dplyr::all_of(rank_col)), .data$Sample) |>
+        dplyr::summarise(Sample_Abundance = sum(Abundance, na.rm = TRUE), .groups = "drop") |>
+        # Now calculate the mean of summed abundances across samples
+        dplyr::group_by(dplyr::across(dplyr::all_of(rank_col))) |>
+        dplyr::summarise(mean_abund = mean(.data$Sample_Abundance, na.rm = TRUE), .groups = "drop") |>
+        dplyr::rename(Taxon = dplyr::all_of(rank_col)) |>
+        dplyr::mutate(Rank = rank_col)
+    })
+
+    mean_all_ranks <- do.call(rbind, mean_by_rank)
+
+
+    Abundance <- as.data.frame(phyloseq::otu_table(me))
+    Abundance <- rowMeans(Abundance)
+    merged <- data.frame(tax_table(me), Abundance)
+
+    # Add abundance to Taxon label
+
+    # 1. Convert mean_all_ranks to a named vector for fast lookup by Taxon and Rank
+    mean_lookup <- mean_all_ranks |>
+      dplyr::select(.data$Taxon, .data$mean_abund) |>
+      tibble::deframe() |>
+      split(mean_all_ranks$Rank) # Nested list: Rank -> Taxon -> mean_abund
+
+    # # 2. Function to append mean abundance to a taxon if found
+    # append_mean <- function(x, rank) {
+    #   if (is.na(x) || !is.character(x)) {
+    #     return(x)
+    #   }
+    #   mean_val <- mean_lookup[[rank]][[x]]
+    #   if (!is.null(mean_val)) {
+    #     return(paste0(x, " (", round(mean_val, 2), ")"))
+    #   } else {
+    #     return(x)
+    #   }
+    # }
+
+    # 3. Apply across relevant columns with known ranks
+    for (col in names(merged)) {
+      if (col %in% tax_ranks) {
+        # rank_name <- col
+        # merged[[col]] <- vapply(merged[[col]], append_mean, character(1L), rank = rank_name, USE.NAMES = FALSE)
+
+        # Replace the vapply loop with a vectorized approach using dplyr::case_when
+        # Extract mean values for this rank
+        rank_means <- mean_all_ranks |>
+          dplyr::filter(.data$Rank == col) |>
+          dplyr::select(.data$Taxon, .data$mean_abund) |>
+          tibble::deframe()
+
+        # Append mean abundance to taxon labels
+        merged <- merged |>
+          dplyr::mutate(
+            !!sym(col) := {
+              current_val <- .data[[col]]
+              dplyr::case_when(
+                # Check if value exists, is not "Other", and exists in rank_means
+                !is.na(current_val) & current_val != "Other" & current_val %in% names(rank_means) ~
+                  paste0(current_val, " (", round(rank_means[current_val], 2), ")"),
+                # Otherwise keep value as is
+                TRUE ~ current_val
+              )
+            }
+          )
+      }
+    }
+  } else { # For single sample
+    Abundance <- as.data.frame(phyloseq::otu_table(me)) |>
+      dplyr::rename(Abundance = all_of(samples))
+    merged <- data.frame(tax_table(me), Abundance)
+
+    # Add abundance to Taxon label
+    for (col in tax_ranks) {
+      # 1. Calculate sums per group
+      sums <- merged |>
+        dplyr::group_by(dplyr::across(dplyr::all_of(col))) |>
+        dplyr::summarise(temp_sum = sum(.data$Abundance, na.rm = TRUE), .groups = "drop")
+
+      # 2. Join back to original data
+      merged <- merged |>
+        dplyr::left_join(sums, by = col) |>
+        # 3. Update the column with "Name (Sum)"
+        # mutate(across(all_of(col), ~ paste0(.x, " (", round(temp_sum, 2), ")"))) |>
+        dplyr::mutate(dplyr::across(dplyr::all_of(col), ~ ifelse(grepl("^Other *\\(<.*%\\)$", .x),
+          .x, # Keep original
+          paste0(.x, " (", round(.data$temp_sum, 2), ")")
+        ))) |>
+        dplyr::select(-.data$temp_sum)
+    }
+  }
+
+  merged_reduced <- .apply_incrementing_filter(merged, ntaxa = ntaxa, tax_column = tax_rank, increment = 0.1)
+  merged <- merged_reduced$data
+
+  other_idx <- which(rownames(merged) == "Other")
+  # Replace NA values in the "Other" row with "Other (<...%) from tax_rank
+  merged[other_idx, ][is.na(merged[other_idx, ])] <- merged[other_idx, tax_rank]
+
+  merged <- merged |>
+    dplyr::mutate(
+      dplyr::across(
+        dplyr::where(is.character),
+        ~ .x |>
+          # 0. Clean slate: Remove ANY existing asterisks to prevent doubling
+          # stringi::stri_replace_all_regex("\\*", "") |>
+          # 1. Remove rank prefixes (k__, p__, etc.)
+          stringi::stri_replace_all_regex("[kpcofgst]__", "") |>
+          # 2. Replace underscores with spaces
+          stringi::stri_replace_all_regex("_", " ") |>
+          # 3. Handle 'unclassified' WITH a name (e.g., "Unclassified Firmicutes (5.2)")
+          # (?i): Case-insensitive flag
+          stringi::stri_replace_first_regex(
+            "(?i)^unclassified\\s+([A-Za-z].*)\\s+\\(([^)]+)\\)$",
+            "**Unclass.** ***$1*** ($2)"
+          ) |>
+          # 4. Handle generic terms like "Unclassified" or "Other" WITHOUT a specific name
+          # These should become **Unclassified** (...) or **Other** (<...%)
+          stringi::stri_replace_first_regex(
+            "(?i)^(unclassified|Other|Unknown)\\s+\\(([^)]+)\\)$",
+            "**$1** ($2)"
+          ) |>
+          # 5. Standard formatting for specific named taxa (e.g., "Actinomycetia (17.37)")
+          # Use negative lookahead for any double asterisk, so replacement is only
+          # applied if string does NOT start with "**" (already formatted)
+          stringi::stri_replace_first_regex(
+            "^(?!\\*\\*)(.*)\\s+\\(([^)]+)\\)$",
+            "***$1*** ($2)"
+          )
+      )
+    )
+
+  merged_long <- ggsankeyfier::pivot_stages_longer(merged, stages_from = tax_ranks, values_from = "Abundance")
+
+  pos <- ggsankeyfier::position_sankey(order = "ascending", align = "center", v_space = "auto")
+
+  ggplot2::ggplot(merged_long, ggplot2::aes(
+    x = .data$stage, y = Abundance, group = .data$node,
+    connector = .data$connector, edge_id = .data$edge_id
+  )) +
+    ggsankeyfier::geom_sankeynode(position = pos) +
+    ggsankeyfier::geom_sankeyedge(
+      position = pos, aes(fill = Abundance),
+      colour = "black",
+      linewidth = 1,
+      ncp = arglist$ncp,
+      slope = arglist$slope
+    ) +
+    ggtext::geom_richtext(
+      aes(label = .data$node),
+      size = text_size,
+      # stat = "sankeynode",
+      stat = ggsankeyfier::StatSankeynode,
+      position = pos,
+      fill = NA, label.color = NA,
+      label.padding = unit(rep(0, 4), "pt")
+    ) +
+    ggplot2::labs(
+      x = NULL,
+      y = NULL,
+      title = plot_title
+    ) +
+    ggplot2::scale_fill_viridis_c(abundance_type, option = "turbo") +
+    scale_x_discrete(expand = ggplot2::expansion(add = c(0.3, .5))) +
+    theme_microEDA(graph_type = "sankey")
 }
