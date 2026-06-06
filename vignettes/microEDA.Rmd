@@ -92,10 +92,16 @@ Inconsistencies (from, e.g., different database versions) in taxonomic annotatio
 check_taxonomic_consistency(me, tax_rank = "Genus", detailed_report = TRUE)
 ```
 
-Taxa from a `microEDA` or `phyloseq` object can be filtered based on minimum abundance and prevalence thresholds. Filtering can be applied globally or within groups defined by a metadata variable. Optionally keeps filtered-out features in the info slot of `microEDA` objects.
+Taxa from a `microEDA` or `phyloseq` object can be filtered using minimum abundance and prevalence thresholds. Filtering can be applied globally or within groups defined by a metadata variable. For `microEDA` objects, filtered-out features can optionally be retained in the object's info slot.
 
 ```{r}
 filtered_me <- filter_features(me, min_abundance = 100, min_prevalence = 0.1)
+```
+
+Filter parameters are recorded for `microEDA` objects and can be displayed directly with `show_filter_history()` or as part of a broader overview using `summary()`:
+
+```{r}
+summary(filtered_me)
 ```
 
 The dataset can also be collapsed at specific ranks by aggregating features of the same taxonomy into higher-level taxonomic groups.

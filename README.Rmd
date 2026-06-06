@@ -44,6 +44,7 @@ remotes::install_github("jrotzetter/microEDA", build_vignettes = TRUE)
 
 ## Currently Implemented Features
   - **`microEDA-class`**: Extends the `phyloseq-class` to hold additional information.
+  - **`microEDA-class` summarisation**: `show()`, `summary()` and `show_filter_history()` print overviews of `microEDA` objects.
   - **MetaPhlAn support**: Load and merge MetaPhlAn profiles using `load_metaphlan()` and `join_mpa_profiles()`.
   - **Feature filtering**: `filter_features()` allows filtering by abundance and prevalence, either globally or within groups defined by a metadata variable (stratified filtering).
   - **Taxonomic agglomeration**: `agglomerate_taxa()` aggregates taxa at specified taxonomic ranks. This implementation is significantly faster than `phyloseq::tax_glom()`.
