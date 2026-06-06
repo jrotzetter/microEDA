@@ -6,6 +6,7 @@
 \alias{microEDA}
 \alias{microEDA,metaphlanProfile-method}
 \alias{microEDA,phyloseq-method}
+\alias{show,microEDA-method}
 \title{A S4 class extending phyloseq for microbiome data analysis}
 \usage{
 microEDA(tax_profile, metadata = NULL, sample_column = NULL)
@@ -13,6 +14,8 @@ microEDA(tax_profile, metadata = NULL, sample_column = NULL)
 \S4method{microEDA}{metaphlanProfile}(tax_profile, metadata = NULL, sample_column = NULL)
 
 \S4method{microEDA}{phyloseq}(tax_profile, metadata = NULL, sample_column = NULL)
+
+\S4method{show}{microEDA}(object)
 }
 \arguments{
 \item{tax_profile}{An object of class \code{metaphlanProfile} or \code{phyloseq}.}
@@ -21,6 +24,8 @@ microEDA(tax_profile, metadata = NULL, sample_column = NULL)
 
 \item{sample_column}{\code{Character} string specifying the column name in
 \code{metadata} that contains sample identifiers (e.g., "Samples").}
+
+\item{object}{A \code{microEDA} object.}
 }
 \value{
 An object of class \code{microEDA}.
@@ -29,6 +34,9 @@ An object of class \code{microEDA}.
 This class inherits from \code{\link[phyloseq]{phyloseq}} and adds a slot for
 additional information, such as lowest taxonomic rank, MetaPhlAn database
 version, applied transformations and/or filters.
+
+Displays a summary of a \code{microEDA} object, including the standard
+\code{phyloseq} output and custom information from the \code{info} slot.
 }
 \details{
 When passed a \linkS4class{metaphlanProfile}, the profile will be returned at

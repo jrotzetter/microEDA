@@ -698,3 +698,73 @@ setMethod("microEDA", "phyloseq", function(tax_profile,
     sample_column = sample_column
   )
 })
+
+
+#' Show method for microEDA objects
+#'
+#' Displays a summary of a `microEDA` object, including the standard
+#' `phyloseq` output and custom information from the `info` slot.
+#'
+#' @param object A `microEDA` object.
+#' @exportMethod show
+#' @rdname microEDA-class
+setMethod("show", "microEDA", function(object) {
+  cat("=== microEDA - an extended phyloseq object ===\n\n")
+
+  # Call the parent phyloseq show method
+  callNextMethod()
+
+  # Print custom 'info' slot header
+  cat("\n--- microEDA Info ---\n")
+
+  # Display info slot contents
+  if (length(object@info) == 0) {
+    cat("info: <empty>\n")
+  } else {
+    for (field_name in names(object@info)) {
+      val <- object@info[[field_name]]
+
+      if (is.null(val)) {
+        cat(sprintf("%s: <NULL>\n", field_name))
+      } else if (is.vector(val) && length(val) == 1) {
+        cat(sprintf("%s: %s\n", field_name, val))
+      } else if (field_name == "filter_history" && is.list(val) && length(val) > 0) {
+        # Special handling for filter_history: count the depth of steps
+        # Assumes all steps have the same length/structure. Modify if
+        # corresponding section in filter_features changes
+        n_steps <- length(val[[1]])
+        step_word <- if (n_steps == 1) "step" else "steps"
+        cat(sprintf("%s: [ %d filter %s applied ]\n", field_name, n_steps, step_word))
+      } else if (is.list(val) && length(val) > 5) {
+        # General fallback for other long lists
+        cat(sprintf("%s: <list of %d items>\n", field_name, length(val)))
+      } else if (field_name == "filtered_taxa" && is.list(val)) {
+        # Special handling for filtered_taxa
+        otu_mat <- val$filtered_otu
+        tax_mat <- val$filtered_tax
+
+        # Ensure they are matrices before accessing dimensions
+        if (is.matrix(otu_mat) && is.matrix(tax_mat)) {
+          n_taxa <- nrow(otu_mat)
+          n_samples <- ncol(otu_mat)
+          n_ranks <- ncol(tax_mat)
+
+          cat(sprintf(
+            "%s: [ %d taxa by %d taxonomic ranks in %d samples ]\n",
+            field_name, n_taxa, n_ranks, n_samples
+          ))
+        } else {
+          # Fallback if structure is unexpected
+          cat(sprintf("%s: <invalid structure>\n", field_name))
+        }
+      } else if (inherits(val, "phyloseq")) {
+        cat(sprintf(
+          "%s: phyloseq-object [%d taxa, %d samples]\n",
+          field_name, phyloseq::ntaxa(val), phyloseq::nsamples(val)
+        ))
+      } else {
+        cat(sprintf("%s: %s\n", field_name, paste(val, collapse = ", ")))
+      }
+    }
+  }
+})
