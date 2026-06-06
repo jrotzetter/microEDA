@@ -56,7 +56,7 @@ tax_data <- data.frame(
 prefixed <- add_taxonomy_prefix(tax_data)
 prefixed
 
-# Example 2: Idempotent — applying again changes nothing
+# Example 2: Idempotent (applying again changes nothing)
 add_taxonomy_prefix(prefixed)
 
 # Example 3: Basic usage with phyloseq objects

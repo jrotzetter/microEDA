@@ -341,6 +341,259 @@ setMethod("filter_history<-", "microEDA", function(object, value) {
 })
 
 
+#' @keywords internal
+#' @noRd
+.get_terminal_width <- function() {
+  # Try cli package first if available
+  if (requireNamespace("cli", quietly = TRUE)) {
+    return(cli::console_width())
+  }
+
+  # Fallback: stty (Reliable on Unix ONLY if stdin is a terminal)
+  if (.Platform$OS.type == "unix") {
+    # Check if stdin is a terminal before calling stty
+    if (interactive() || !is.null(stdin()) && isatty(stdin())) {
+      tryCatch(
+        {
+          size <- system2("stty", "size", stdout = TRUE, stderr = FALSE)
+          # stty returns "rows columns"
+          val <- as.integer(strsplit(size, "\\s+")[[1]][2])
+          if (!is.na(val)) {
+            return(val)
+          }
+        },
+        error = function(e) NULL,
+        warning = function(w) NULL
+      )
+    }
+  }
+
+  # Final Fallback: R's global width option (default 80)
+  return(getOption("width", 80))
+}
+
+
+#' Display Filter History for a microEDA Object
+#'
+#' Prints a formatted summary of all filter steps applied to a
+#' \linkS4class{microEDA} object, showing parameters used and taxa removed at
+#' each step. The output adapts to the terminal width, displaying either a
+#' horizontal table (for few steps) or a vertical list (for many steps or
+#' narrow terminals).
+#'
+#' @param me A `microEDA` object containing the filter history
+#'   in the `@info$filter_history` slot.
+#' @param label_width `Integer` specifying the width (in characters)
+#'   reserved for row labels in the output. Default is 20.
+#'
+#' @return Invisible `NULL`. The function is called for its
+#'   side effect of printing to the console.
+#'
+#' @details
+#' The function extracts the `filter_history` slot from the
+#' `me` object and checks if it is empty. If history exists, it
+#' calculates the required terminal width to display all steps in a
+#' single table.
+#'
+#' If the table exceeds the terminal width and there is more than one step,
+#' the output switches to a vertical layout, printing each step
+#' individually with cumulative taxa removal counts. Otherwise, a
+#' compact horizontal table is rendered.
+#'
+#' @section Output Layout:
+#' \itemize{
+#'   \item \strong{Horizontal:} Shows all steps side-by-side with
+#'     parameters as rows. Includes a "Total removed" row with
+#'     cumulative sums.
+#'   \item \strong{Vertical:} Shows one step at a time with all
+#'     parameters listed. Includes "Total taxa removed" up to that step.
+#' }
+#'
+#' @examples
+#' data(GlobalPatterns, package = "phyloseq")
+#' me <- microEDA(GlobalPatterns)
+#' me_filtered <- filter_features(me, min_abundance = 100, min_prevalence = 0.5)
+#' show_filter_history(me_filtered)
+#'
+#' @export
+#' @rdname show_filter_history
+setGeneric("show_filter_history", function(me, label_width = 20) {
+  standardGeneric("show_filter_history")
+})
+
+#' @rdname show_filter_history
+#' @exportMethod show_filter_history
+setMethod(
+  "show_filter_history", signature(me = "microEDA"),
+  function(me, label_width = 20) {
+    # ///////////////////////////////////////////////////////////////////////////
+    # 1. Input Validation & Extraction
+    # ///////////////////////////////////////////////////////////////////////////
+
+    # Input validation
+    if (!inherits(me, "microEDA")) {
+      stop("'me' must be a microEDA object.")
+    }
+
+    # Extract history
+    val <- filter_history(me)
+
+    # Safety check: Handle cases where history is missing, empty, or contains empty vectors
+    if (is.null(val) || !is.list(val) || length(val) == 0 || length(val[[1]]) == 0) {
+      cat(sprintf("%-*s <empty>\n", label_width, "filter_history:"))
+      return(invisible(NULL))
+    }
+
+    # Determine the number of filter steps applied
+    n_steps <- length(val[[1]])
+    step_word <- if (n_steps == 1) "step" else "steps"
+
+    # ///////////////////////////////////////////////////////////////////////////
+    # 2. Print Header
+    # ///////////////////////////////////////////////////////////////////////////
+
+    # Create the header string indicating the number of steps
+    prefix_text <- sprintf("%-*s [ %d filter %s applied ]", label_width, "filter_history:", n_steps, step_word)
+    cat(prefix_text, "\n\n")
+
+    # ///////////////////////////////////////////////////////////////////////////
+    # 3. Layout Calculation & Data Preparation
+    # ///////////////////////////////////////////////////////////////////////////
+
+    # Get the current terminal width to decide between horizontal or vertical layout
+    max_terminal_width <- .get_terminal_width()
+
+    # Helper function to replace empty strings with "N/A" for cleaner display
+    clean <- function(x) ifelse(x == "", "N/A", x)
+
+    labels <- c(
+      "Minimum abundance", "Minimum prevalence", "Filtered by group",
+      "Abundance criterion", "Group requirement", "Filtered kept", "Taxa removed"
+    )
+
+    # Prepare the data rows corresponding to the labels above
+    # Convert factors/numbers to character and clean empty strings
+    data_rows_list <- list(
+      as.character(val$min_abundance),
+      as.character(val$min_prevalence),
+      clean(val$group_var),
+      val$abundance_criterion,
+      clean(val$group_requirement),
+      as.character(val$keep_filtered),
+      as.character(val$n_removed)
+    )
+
+    # Build the data matrix manually (rows = labels, cols = steps)
+    data_matrix <- matrix("", nrow = length(labels), ncol = n_steps)
+    for (j in seq_along(labels)) {
+      data_matrix[j, ] <- data_rows_list[[j]]
+    }
+
+    # Calculate the maximum width needed for the label column
+    label_w_inner <- 0
+    for (j in seq_along(labels)) {
+      w <- nchar(labels[j])
+      if (w > label_w_inner) label_w_inner <- w
+    }
+
+    # Calculate the optimal width for each step column based on its content
+    step_widths <- integer(n_steps)
+    for (i in seq_len(n_steps)) {
+      # Width needed for the header "Step X"
+      h_w <- nchar(sprintf("Step %d", i))
+      # Width needed for the widest data point in this column
+      d_w <- 0
+      for (j in seq_len(nrow(data_matrix))) {
+        w <- nchar(data_matrix[j, i])
+        if (w > d_w) d_w <- w
+      }
+      # Store max width + 1 for padding
+      step_widths[i] <- max(h_w, d_w) + 1
+    }
+
+    # Calculate indentation so the table aligns with the '[' in the header
+    start_marker <- regexpr("\\[", prefix_text)
+    indent_width <- max(0, start_marker - 1)
+
+    # Estimate total width required for the horizontal table
+    # Formula: indent + label_col + separators + sum of step_cols + extra separators
+    total_required <- indent_width + label_w_inner + 3 + sum(step_widths) + (2 * n_steps)
+
+    # ///////////////////////////////////////////////////////////////////////////
+    # 4. Render Output
+    # ///////////////////////////////////////////////////////////////////////////
+
+    # If the table is too wide for the terminal AND there are multiple steps, switch
+    # to a vertical layout (one block per step). Otherwise, use a horizontal table.
+    if (total_required > max_terminal_width && n_steps > 1) {
+      # --- Vertical Layout (for wide terminals or many steps) ---
+      for (i in seq_len(n_steps)) {
+        cat(sprintf("     --- Step %d of %d ---\n", i, n_steps))
+        cat(sprintf("     Minimum abundance:    %s\n", val$min_abundance[i]))
+        cat(sprintf("     Minimum prevalence:   %s\n", val$min_prevalence[i]))
+
+        # Handle group variable display
+        g_var <- val$group_var[i]
+        cat(sprintf("     Filtered by group:    %s\n", if (g_var == "") "FALSE" else g_var))
+        cat(sprintf("     Abundance criterion:  %s\n", val$abundance_criterion[i]))
+
+        # Handle group requirement display
+        g_req <- val$group_requirement[i]
+        cat(sprintf("     Group requirement:    %s\n", if (g_req == "") "N/A" else g_req))
+
+        cat(sprintf("     Filtered kept:        %s\n", val$keep_filtered[i]))
+        cat(sprintf("     Taxa removed:         %s\n", val$n_removed[i]))
+
+        # Show cumulative removal count up to this step
+        cat(sprintf("     Total taxa removed:   %s\n\n", sum(val$n_removed[1:i])))
+      }
+    } else {
+      # --- Horizontal Table Layout ---
+
+      # Helper to print the calculated indentation
+      print_indent <- function() cat(paste(rep(" ", indent_width), collapse = ""))
+
+      # Header Row
+      print_indent()
+      cat(sprintf("%-*s :", label_w_inner, "Parameter"))
+      for (i in seq_len(n_steps)) {
+        cat(sprintf(" %*s", step_widths[i], sprintf("Step %d", i)))
+      }
+      cat("\n")
+
+      # Separator Line
+      print_indent()
+      cat(sprintf("%s-:", paste(rep("-", label_w_inner), collapse = "")))
+      for (i in seq_len(n_steps)) {
+        cat(sprintf("-%s-", paste(rep("-", step_widths[i]), collapse = "")))
+      }
+      cat("\n")
+
+      # Data Rows
+      for (j in seq_along(labels)) {
+        print_indent()
+        cat(sprintf("%-*s :", label_w_inner, labels[j]))
+        for (i in seq_len(n_steps)) {
+          # Right-align data within the calculated column width
+          cat(sprintf(" %*s", step_widths[i], data_matrix[j, i]))
+        }
+        cat("\n")
+      }
+
+      # Cumulative Total Row
+      cum_sum <- cumsum(val$n_removed)
+      print_indent()
+      cat(sprintf("%-*s :", label_w_inner, "Total removed"))
+      for (i in seq_len(n_steps)) {
+        cat(sprintf(" %*s", step_widths[i], as.character(cum_sum[i])))
+      }
+      cat("\n")
+    }
+
+    return(invisible(NULL))
+  }
+)
+
 #### Methods for MetaPhlAn profiles ####
 ### //////////////////////////////////////////////////////////////////////// ###
 
@@ -702,8 +955,8 @@ setMethod("microEDA", "phyloseq", function(tax_profile,
 
 #' Show method for microEDA objects
 #'
-#' Displays a summary of a `microEDA` object, including the standard
-#' `phyloseq` output and custom information from the `info` slot.
+#' `show()` displays a summary of a `microEDA` object, including the standard
+#' `phyloseq` output and information from the `info` slot.
 #'
 #' @param object A `microEDA` object.
 #' @exportMethod show
@@ -767,4 +1020,173 @@ setMethod("show", "microEDA", function(object) {
       }
     }
   }
+})
+
+
+#' Summarize a microEDA object
+#'
+#' Provides a concise, more detailed overview over a `microEDA` object than
+#' the [show()][microEDA-class] method.
+#'
+#' @param object A `microEDA` object.
+#' @param ... Optional arguments (currently supports `label_width`).
+#' @return An invisible list containing summary statistics.
+#' @exportMethod summary
+#' @rdname summary-microEDA
+setMethod("summary", "microEDA", function(object, ...) {
+  defaults <- list(
+    # Define a standard width for all labels
+    label_width = 20
+  )
+  # Handle optional ellipsis arguments
+  arglist <- list(...)
+
+  arglist <- .warn_invalid_args(allowed = names(defaults), arglist = arglist)
+
+  arglist <- utils::modifyList(defaults, arglist)
+
+  me_info <- microEDA::info(object)
+
+  # --- Extract Core Dimensions from Main Phyloseq Slots ---
+
+  # Access the OTU table and Taxonomy table directly from the phyloseq inheritance
+  otu_mat <- as(otu_table(object), "matrix")
+  tax_tab <- tax_table(object, errorIfNULL = FALSE)
+  sample_dat <- phyloseq::sample_data(object, errorIfNULL = FALSE)
+
+  if (is.null(otu_mat)) {
+    stop("Cannot summarize: OTU table is missing.")
+  }
+
+  # Calculate dimensions
+  # Handle orientation: phyloseq otu_table can be taxa_as_rows or taxa_as_columns
+  # In theory orientation should have been handled by the microEDA constructor
+  if (phyloseq::taxa_are_rows(object)) {
+    n_taxa <- nrow(otu_mat)
+    n_samples <- ncol(otu_mat)
+  } else {
+    n_taxa <- ncol(otu_mat)
+    n_samples <- nrow(otu_mat)
+  }
+
+  # Get taxonomic ranks
+  if (!is.null(tax_tab)) {
+    n_ranks <- ncol(tax_tab)
+    tax_ranks <- phyloseq::rank_names(object)
+  } else {
+    n_ranks <- 0
+    tax_ranks <- ""
+  }
+  # Get sample variables
+  if (!is.null(sample_dat)) {
+    n_vars <- ncol(sample_dat)
+    sample_vars <- phyloseq::sample_variables(object)
+  } else {
+    n_vars <- 0
+    sample_vars <- ""
+  }
+
+  # --- Initialize Result List ---
+  res <- list(
+    taxa = n_taxa,
+    samples = n_samples,
+    taxonomic_ranks_n = n_ranks,
+    taxonomic_ranks = tax_ranks,
+    sample_variables_n = n_vars,
+    sample_variables = sample_vars
+  )
+
+  # --- Conditional Count Statistics ---
+  # Only calculate if data is raw counts (no transformations applied)
+  if (is.null(me_info$transforms) || .is_counts(otu_mat, silent = TRUE)) {
+    total_reads <- sum(otu_mat, na.rm = TRUE)
+    min_count <- min(otu_mat, na.rm = TRUE)
+    max_count <- max(otu_mat, na.rm = TRUE)
+
+    res$total_reads <- total_reads
+    res$min_count <- min_count
+    res$max_count <- max_count
+  }
+
+  # --- Print Formatted Output: Core Stats ---
+  cat("Summary of microEDA object\n")
+  cat("========================\n")
+  cat(sprintf("%-*s %d\n", arglist$label_width, "Taxa:", res$taxa))
+  cat(sprintf("%-*s %d\n", arglist$label_width, "Samples:", res$samples))
+  # Note: The space between %d and %s is manual, as it's part of the data separation, not label padding
+  cat(sprintf(
+    "%-*s %d         %s\n",
+    arglist$label_width,
+    "Taxonomic Ranks:",
+    res$taxonomic_ranks_n,
+    paste(res$taxonomic_ranks, collapse = " - ")
+  ))
+
+  cat(sprintf(
+    "%-*s %d         %s\n",
+    arglist$label_width,
+    "Sample Variables:",
+    res$sample_variables_n,
+    paste(res$sample_variables, collapse = ", ")
+  ))
+
+  if (!is.null(res$total_reads)) {
+    cat("\n[Status: Raw Count Data]\n")
+    cat(sprintf("%-*s %s\n", arglist$label_width, "Total Reads:", format(res$total_reads, big.mark = ",")))
+    cat(sprintf("%-*s %s\n", arglist$label_width, "Min Count:", format(res$min_count, big.mark = ",")))
+    cat(sprintf("%-*s %s\n", arglist$label_width, "Max Count:", format(res$max_count, big.mark = ",")))
+  } else {
+    cat("\n[Status: Transformed Data]\n")
+    cat("Count statistics (total/min/max) omitted.\n")
+  }
+
+  # --- Print Formatted Output: Info Slot ---
+  cat("\n--- microEDA Info ---\n")
+
+  if (length(me_info) == 0) {
+    cat(sprintf("%-*s %s\n", arglist$label_width, "Info:", "<empty>"))
+  } else {
+    for (field_name in names(me_info)) {
+      val <- me_info[[field_name]]
+
+      if (is.null(val)) {
+        cat(sprintf("%-*s %s\n", arglist$label_width, paste0(field_name, ":"), "<NULL>"))
+      } else if (is.vector(val) && length(val) == 1) {
+        cat(sprintf("%-*s %s\n", arglist$label_width, paste0(field_name, ":"), val))
+      } else if (field_name == "filter_history" && is.list(val) && length(val) > 0) {
+        # Special handling for filter_history
+        show_filter_history(object, label_width = arglist$label_width)
+      } else if (is.list(val) && length(val) > 5) {
+        # General fallback for long lists
+        cat(sprintf("%-*s <list of %d items>\n", arglist$label_width, paste0(field_name, ":"), length(val)))
+      } else if (field_name == "filtered_taxa" && is.list(val)) {
+        # Special handling for filtered_taxa
+        otu_mat_filt <- val$filtered_otu
+        tax_mat_filt <- val$filtered_tax
+
+        if (is.matrix(otu_mat_filt) && is.matrix(tax_mat_filt)) {
+          n_taxa_filt <- nrow(otu_mat_filt)
+          n_samples_filt <- ncol(otu_mat_filt)
+          n_ranks_filt <- ncol(tax_mat_filt)
+
+          cat(sprintf(
+            "%-*s [ %d taxa by %d taxonomic ranks in %d samples ]\n", arglist$label_width,
+            paste0(field_name, ":"), n_taxa_filt, n_ranks_filt, n_samples_filt
+          ))
+        } else {
+          cat(sprintf("%-*s <invalid structure>\n", arglist$label_width, paste0(field_name, ":")))
+        }
+      } else if (inherits(val, "phyloseq")) {
+        cat(sprintf(
+          "%-*s phyloseq-object [%d taxa, %d samples]\n", arglist$label_width,
+          paste0(field_name, ":"), phyloseq::ntaxa(val), phyloseq::nsamples(val)
+        ))
+      } else {
+        cat(sprintf("%-*s %s\n", arglist$label_width, paste0(field_name, ":"), paste(val, collapse = ", ")))
+      }
+    }
+  }
+
+  # Return invisible list for programmatic use
+  return(invisible(res))
 })

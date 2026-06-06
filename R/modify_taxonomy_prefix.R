@@ -131,7 +131,7 @@
 #' prefixed <- add_taxonomy_prefix(tax_data)
 #' prefixed
 #'
-#' # Example 2: Idempotent — applying again changes nothing
+#' # Example 2: Idempotent (applying again changes nothing)
 #' add_taxonomy_prefix(prefixed)
 #'
 #' # Example 3: Basic usage with phyloseq objects
@@ -290,7 +290,7 @@ add_taxonomy_prefix <- function(me, prefix_map = c(
 #' trimmed <- trim_taxonomy_prefix(prefixed_tax_data)
 #' trimmed
 #'
-#' # Example 2: Idempotent — applying again changes nothing
+#' # Example 2: Idempotent (applying again changes nothing)
 #' trim_taxonomy_prefix(trimmed)
 #'
 #' # Example 3: Basic usage with phyloseq objects

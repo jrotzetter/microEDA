@@ -37,6 +37,7 @@ Imports:
 Depends: 
     R (>= 4.1.0)
 Suggests: 
+    cli (>= 3.6.6),
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)

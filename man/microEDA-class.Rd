@@ -35,8 +35,8 @@ This class inherits from \code{\link[phyloseq]{phyloseq}} and adds a slot for
 additional information, such as lowest taxonomic rank, MetaPhlAn database
 version, applied transformations and/or filters.
 
-Displays a summary of a \code{microEDA} object, including the standard
-\code{phyloseq} output and custom information from the \code{info} slot.
+\code{show()} displays a summary of a \code{microEDA} object, including the standard
+\code{phyloseq} output and information from the \code{info} slot.
 }
 \details{
 When passed a \linkS4class{metaphlanProfile}, the profile will be returned at

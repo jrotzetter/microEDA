@@ -55,7 +55,7 @@ prefixed_tax_data
 trimmed <- trim_taxonomy_prefix(prefixed_tax_data)
 trimmed
 
-# Example 2: Idempotent — applying again changes nothing
+# Example 2: Idempotent (applying again changes nothing)
 trim_taxonomy_prefix(trimmed)
 
 # Example 3: Basic usage with phyloseq objects
