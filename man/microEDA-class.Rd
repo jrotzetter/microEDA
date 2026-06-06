@@ -33,7 +33,7 @@ version, applied transformations and/or filters.
 \details{
 When passed a \linkS4class{metaphlanProfile}, the profile will be returned at
 the lowest available taxonomic rank, which usually is at strain rank. To
-agglomerate the profile at a higher rank, please see \code{\link[=filter_features]{filter_features()}}.
+agglomerate the profile at a higher rank, please see \code{\link[=agglomerate_taxa]{agglomerate_taxa()}}.
 }
 \section{Slots}{
 

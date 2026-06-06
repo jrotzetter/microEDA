@@ -189,8 +189,8 @@
 #'
 #' Filters taxa (features) from a `microEDA` or `phyloseq` object based on minimum abundance
 #' and prevalence thresholds. Filtering can be applied globally or within groups
-#' defined by a metadata variable. Optionally adds an "Other" category summarizing
-#' filtered features.
+#' defined by a metadata variable. Optionally keeps filtered-out features in the
+#' info slot of `microEDA` objects.
 #'
 #' @param me A `microEDA` or `phyloseq` object containing microbiome abundance data and associated metadata.
 #' @param group_var (Optional) Name of the sample metadata variable to define groups

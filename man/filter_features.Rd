@@ -54,8 +54,8 @@ objects.
 \description{
 Filters taxa (features) from a \code{microEDA} or \code{phyloseq} object based on minimum abundance
 and prevalence thresholds. Filtering can be applied globally or within groups
-defined by a metadata variable. Optionally adds an "Other" category summarizing
-filtered features.
+defined by a metadata variable. Optionally keeps filtered-out features in the
+info slot of \code{microEDA} objects.
 }
 \examples{
 data(GlobalPatterns, package = "phyloseq")

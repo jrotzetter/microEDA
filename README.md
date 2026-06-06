@@ -15,17 +15,20 @@ R](https://img.shields.io/badge/R-4.5.3-blue?logo=r&logoColor=white)](https://cr
 [![Made with
 R](https://img.shields.io/badge/RStudio-2026.01.1_Build_403-blue?logo=rstudio&logoColor=white)](https://posit.co/products/open-source/rstudio/ "Go to RSTUDIO IDE homepage")
 [![Project Status:
-WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 <!-- badges: end -->
 
 ## Overview
 
-R package for microbiome exploratory data analysis. Currently under
-active development.
+`microEDA` is an R package for **exploratory data analysis of microbiome
+data**, designed to answer the fundamental question: *“Who is in my
+samples?”*  
+In addition to core visualization tools, the package provides some
+utility functions to detect common data issues.
 
 ## Installation
 
-You can install the development version of microEDA from
+The development version of microEDA can be installed from
 [GitHub](https://github.com/jrotzetter/microEDA) with:
 
 ``` r
@@ -40,49 +43,90 @@ Or the `remotes` package:
 remotes::install_github("jrotzetter/microEDA", build_vignettes = TRUE)
 ```
 
-## Currently implemented features
+## Currently Implemented Features
 
-- `microEDA()` class extending phyloseq to hold additional information.
-- Load and join MetaPhlAn profiles with `load_metaphlan()` and
-  `join_mpa_profiles()`.
-- `filter_features()` by abundance and prevalence. Filtering can be
-  applied globally or within groups (stratified) defined by a metadata
-  variable.
-- Aggregate taxa of the same taxonomy at specific taxonomic ranks with
-  `agglomerate_taxa()`. This implementation is significantly faster than
-  phyloseq::tax_glom.
-- Functions to easily trim or add taxonomic prefixes to a taxonomyTable.
-- `to_phyloseq()` to convert `metaphlanProfile` and `microEDA` objects
-  into a `phyloseq` object.
-- Check for taxonomic inconsistencies within a taxonomyTable with
-  `check_taxonomic_consistency()`
+- **`microEDA-class`**: Extends the `phyloseq-class` to hold additional
+  information.
+- **MetaPhlAn support**: Load and merge MetaPhlAn profiles using
+  `load_metaphlan()` and `join_mpa_profiles()`.
+- **Feature filtering**: `filter_features()` allows filtering by
+  abundance and prevalence, either globally or within groups defined by
+  a metadata variable (stratified filtering).
+- **Taxonomic agglomeration**: `agglomerate_taxa()` aggregates taxa at
+  specified taxonomic ranks. This implementation is significantly faster
+  than `phyloseq::tax_glom()`.
+- **Taxonomy table utilities**: Functions to trim or add taxonomic
+  prefixes (e.g., `k__`, `p__`) in a `taxonomyTable`.
+- **Conversion to phyloseq**: `to_phyloseq()` converts
+  `metaphlanProfile` and `microEDA` objects into standard `phyloseq`
+  objects.
+- **Taxonomic consistency check**: `check_taxonomic_consistency()`
+  identifies inconsistencies within a `taxonomyTable`.
+- **Presence lists**: `get_presence_list()` returns unique taxa present
+  in each group defined by a sample metadata variable.
+- **Taxa overlap analysis**: `get_taxa_overlaps()` computes overlaps and
+  unique sets of taxa across sample groups, serving as an alternative to
+  UpSet plots.
+
+## Visualization Functions
+
+`microEDA` provides a collection of plotting functions, built on
+ggplot2, and designed for exploratory data analysis of microbiome data.
+
+### 1. Taxonomic Composition Barplot – `plot_taxa_barchart()`
+
+- Visualizes abundance of taxa across samples.
+- Supports aggregation at any taxonomic rank (e.g., Phylum, Genus).
+- Enables grouping of samples by metadata variables (e.g., treatment,
+  disease state).
+
+### 2. Mean Abundance & Prevalence Heatmap – `plot_taxa_heatmap()`
+
+- Each cell displays:
+  - **Mean abundance** of a taxon within a group.
+  - **Prevalence**: proportion of samples in the group where the taxon
+    is detected.
+- This dual metric helps distinguish consistently abundant taxa from
+  those that are sporadically present.
+
+### 3. Taxonomic Intersection UpSet Plot – `plot_taxa_upset()`
+
+- Visualizes shared and unique taxa across multiple sample groups.
+- Complemented by `get_taxa_overlaps()` for programmatic access to
+  intersection data.
+
+### 4. Taxonomic Flow Sankey Plot – `plot_taxa_sankey()`
+
+- Illustrates hierarchical taxonomic relationships from higher (e.g.,
+  Phylum) to lower (e.g., Species) taxonomic ranks.
+- Can display abundance flow for a **single sample** or **mean
+  abundance** across a group of samples.
+
+## Example Usage
+
+All functions are compatible with `phyloseq` objects, though the package
+internal `microEDA-class` provides some additional information and
+functionalities.
+
+A `microEDA` object can be created by calling:
+
+``` r
+library(microEDA)
+data(GlobalPatterns, package = "phyloseq")
+
+me <- microEDA(GlobalPatterns)
+```
+
+In turn, a `microEDA` or `metaphlanProfile` object can be converted to
+`phyloseq` with:
+
+``` r
+ps <- to_phyloseq(me)
+
+identical(GlobalPatterns, ps)
+#> [1] TRUE
+```
 
 ## Planned features
 
-`microEDA` is planned to provide a collection of plotting functions,
-built on ggplot2, and designed for exploratory analysis of microbiome
-data.
-
-1.  Taxonomic Composition Barplot
-    - Visualize the relative abundance of taxa within samples
-    - Aggregate data at any taxonomic rank (e.g., Phylum, Genus)
-    - Group samples by metadata variables (e.g., treatment, disease
-      state)
-    - Custom color palette to increase available distinct colors is
-      planned
-2.  Mean Abundance & Prevalence Heatmap Table
-    - Each cell will display:
-      - Mean Relative Abundance of a taxon within a group
-      - Prevalence indicating the proportion of samples within a group
-        where a taxon is detected
-    - This combined view helps distinguish between consistently abundant
-      taxa and those that are highly variable
-3.  Taxonomic Intersection UpSet Plot
-    - Show the number of shared and unique taxa between any number of
-      sample groups
-    - Separate function to obtain list of intersections will be provided
-4.  Taxonomic Flow Sankey Plot
-    - Visualize the hierarchical relationship from higher (e.g., Phylum)
-      to lower (e.g., Species) taxonomic ranks
-    - Either plot the relative abundance “flow” for a single sample or
-      the mean abundance across a group of samples
+- Custom color palette to increase available distinct colors is planned

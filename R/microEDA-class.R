@@ -660,7 +660,7 @@ setMethod("filter_history<-", "microEDA", function(object, value) {
 #' @details
 #' When passed a \linkS4class{metaphlanProfile}, the profile will be returned at
 #' the lowest available taxonomic rank, which usually is at strain rank. To
-#' agglomerate the profile at a higher rank, please see [`filter_features()`].
+#' agglomerate the profile at a higher rank, please see [`agglomerate_taxa()`].
 #'
 #'
 #' @examples
