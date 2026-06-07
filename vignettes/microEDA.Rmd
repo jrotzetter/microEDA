@@ -111,7 +111,9 @@ me_phylum <- agglomerate_taxa(me, tax_rank = "Phylum")
 me_phylum
 ```
 
-## Visualization Functions
+Alternatively, the `plot_taxa_...` functions automatically invoke `filter_features()` and `agglomerate_taxa()` internally when relevant arguments (e.g., `tax_rank`) are provided, allowing to skip manual preprocessing.
+
+# Visualization Functions
 
 ```{r}
 plot_taxa_barchart(me, "p", as_relative = FALSE)

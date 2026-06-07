@@ -137,6 +137,10 @@ identical(GlobalPatterns, ps)
 #> [1] TRUE
 ```
 
+For more details please see `vignette("microEDA")` or the help pages in
+the documentation. Both are also available online at
+<https://jrotzetter.github.io/microEDA/>.
+
 ## Planned features
 
 - Custom color palette to increase available distinct colors is planned
