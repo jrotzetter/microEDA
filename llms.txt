@@ -1,0 +1,230 @@
+# microEDA
+
+## Overview
+
+`microEDA` is an R package for **exploratory data analysis of microbiome
+data**, designed to answer the fundamental question: *“Who is in my
+samples?”*
+
+In addition to core visualization tools, the package provides some
+utility functions to detect common data issues.
+
+## Installation
+
+The development version of microEDA can be installed from
+[GitHub](https://github.com/jrotzetter/microEDA) with:
+
+``` r
+
+# install.packages("pak")
+pak::pak("jrotzetter/microEDA")
+```
+
+Or the `remotes` package:
+
+``` r
+
+# install.packages("remotes")
+remotes::install_github("jrotzetter/microEDA", build_vignettes = TRUE)
+```
+
+## Currently Implemented Features
+
+- **`microEDA-class`**: Extends the `phyloseq-class` to hold additional
+  information.
+- **`microEDA-class` summarisation**: `show()`,
+  [`summary()`](https://rdrr.io/r/base/summary.html) and
+  [`show_filter_history()`](https://jrotzetter.github.io/microEDA/reference/show_filter_history.md)
+  print overviews of `microEDA` objects.
+- **MetaPhlAn support**: Load and merge MetaPhlAn profiles using
+  [`load_metaphlan()`](https://jrotzetter.github.io/microEDA/reference/load_metaphlan.md)
+  and
+  [`join_mpa_profiles()`](https://jrotzetter.github.io/microEDA/reference/join_mpa_profiles.md).
+- **Feature filtering**:
+  [`filter_features()`](https://jrotzetter.github.io/microEDA/reference/filter_features.md)
+  allows filtering by abundance and prevalence, either globally or
+  within groups defined by a metadata variable (stratified filtering).
+- **Taxonomic agglomeration**:
+  [`agglomerate_taxa()`](https://jrotzetter.github.io/microEDA/reference/agglomerate_taxa.md)
+  aggregates taxa at specified taxonomic ranks. This implementation is
+  significantly faster than
+  [`phyloseq::tax_glom()`](https://rdrr.io/pkg/phyloseq/man/tax_glom.html).
+- **Taxonomy table utilities**: Functions to trim or add taxonomic
+  prefixes (e.g., `k__`, `p__`) in a `taxonomyTable`.
+- **Conversion to phyloseq**:
+  [`to_phyloseq()`](https://jrotzetter.github.io/microEDA/reference/to_phyloseq.md)
+  converts `metaphlanProfile` and `microEDA` objects into standard
+  `phyloseq` objects.
+- **Taxonomic consistency check**:
+  [`check_taxonomic_consistency()`](https://jrotzetter.github.io/microEDA/reference/check_taxonomic_consistency.md)
+  identifies inconsistencies within a `taxonomyTable`.
+- **Presence lists**:
+  [`get_presence_list()`](https://jrotzetter.github.io/microEDA/reference/get_presence_list.md)
+  returns unique taxa present in each group defined by a sample metadata
+  variable.
+- **Taxa overlap analysis**:
+  [`get_taxa_overlaps()`](https://jrotzetter.github.io/microEDA/reference/get_taxa_overlaps.md)
+  computes overlaps and unique sets of taxa across sample groups,
+  serving as an alternative to UpSet plots.
+
+## Visualization Functions
+
+`microEDA` provides a collection of plotting functions, built on
+ggplot2, and designed for exploratory data analysis of microbiome data.
+
+### 1. Taxonomic Composition Barplot
+
+[`plot_taxa_barchart()`](https://jrotzetter.github.io/microEDA/reference/plot_taxa_barchart.md)
+visualizes abundance of taxa across samples.
+
+- **Aggregates** data at any taxonomic rank (e.g., Phylum, Genus).
+- Optionally **Groups** samples by metadata variables (e.g., treatment,
+  disease state).
+
+### 2. Mean Abundance & Prevalence Heatmap
+
+[`plot_taxa_heatmap()`](https://jrotzetter.github.io/microEDA/reference/plot_taxa_heatmap.md)
+displays a dual-metric view where each cell represents:
+
+- **Mean abundance**: Average taxon abundance within a group.
+- **Prevalence**: Proportion of samples in the group where the taxon is
+  detected.
+
+This dual metric helps distinguish consistently abundant taxa from those
+that are sporadically present.
+
+### 3. Taxonomic Intersection UpSet Plot
+
+[`plot_taxa_upset()`](https://jrotzetter.github.io/microEDA/reference/plot_taxa_upset.md)
+visualizes shared and unique taxa across multiple sample groups.
+
+- Complemented by
+  [`get_taxa_overlaps()`](https://jrotzetter.github.io/microEDA/reference/get_taxa_overlaps.md)
+  for programmatic access to intersection data.
+
+### 4. Taxonomic Flow Sankey Plot
+
+[`plot_taxa_sankey()`](https://jrotzetter.github.io/microEDA/reference/plot_taxa_sankey.md)
+illustrates hierarchical taxonomic relationships from higher (e.g.,
+Phylum) to lower (e.g., Species) taxonomic ranks.
+
+- Supports display of abundance flow for a **single sample** or **mean
+  abundance** across a group of samples.
+
+## Example Usage
+
+All functions are compatible with `phyloseq` objects, though the package
+internal `microEDA-class` provides some additional information and
+functionalities.
+
+A `microEDA` object can be created by calling:
+
+``` r
+
+library(microEDA)
+data(GlobalPatterns, package = "phyloseq")
+
+me <- microEDA(GlobalPatterns)
+```
+
+In turn, a `microEDA` or `metaphlanProfile` object can be converted to
+`phyloseq` with:
+
+``` r
+
+ps <- to_phyloseq(me)
+
+identical(GlobalPatterns, ps)
+#> [1] TRUE
+```
+
+For more details please see
+[`vignette("microEDA")`](https://jrotzetter.github.io/microEDA/articles/microEDA.md)
+or the help pages in the documentation. Both are also available online
+at <https://jrotzetter.github.io/microEDA/>.
+
+## Planned features
+
+- Custom color palette to increase available distinct colors is planned
+
+# Package index
+
+## All functions
+
+- [`add_taxonomy_prefix()`](https://jrotzetter.github.io/microEDA/reference/add_taxonomy_prefix.md)
+  : Add taxonomic prefixes to tax_table columns
+- [`agglomerate_taxa()`](https://jrotzetter.github.io/microEDA/reference/agglomerate_taxa.md)
+  : Agglomerate Taxa by Taxonomic Rank
+- [`check_taxonomic_consistency()`](https://jrotzetter.github.io/microEDA/reference/check_taxonomic_consistency.md)
+  : Check Taxonomic Consistency Across Higher-Level Classifications
+- [`filter_features()`](https://jrotzetter.github.io/microEDA/reference/filter_features.md)
+  : Filter Features Based on Abundance and Prevalence
+- [`get_presence_list()`](https://jrotzetter.github.io/microEDA/reference/get_presence_list.md)
+  : Get a List of Present Taxa by Group
+- [`get_taxa_overlaps()`](https://jrotzetter.github.io/microEDA/reference/get_taxa_overlaps.md)
+  : Compute Taxa Overlaps and Specific Sets Across Groups
+- [`info()`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`` `info<-`() ``](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`infoKeys()`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`infoFields()`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`taxrank()`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`` `taxrank<-`() ``](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`transforms()`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`` `transforms<-`() ``](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`mpa_version(`*`<microEDA>`*`)`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`` `mpa_version<-`( ``*`<microEDA>`*`)`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`filtered_taxa()`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`` `filtered_taxa<-`() ``](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`filter_history()`](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  [`` `filter_history<-`() ``](https://jrotzetter.github.io/microEDA/reference/info-accessors.md)
+  : Get or set the info slot from a microEDA object
+- [`join_mpa_profiles()`](https://jrotzetter.github.io/microEDA/reference/join_mpa_profiles.md)
+  : Join multiple MetaPhlAn profiles
+- [`load_metaphlan()`](https://jrotzetter.github.io/microEDA/reference/load_metaphlan.md)
+  : Load a MetaPhlAn taxonomic profile from a file
+- [`merged_metaphlan_profiles`](https://jrotzetter.github.io/microEDA/reference/merged_metaphlan_profiles.md)
+  : Merged MetaPhlAn4 profiles data
+- [`metaphlanProfile-class`](https://jrotzetter.github.io/microEDA/reference/metaphlanProfile-class.md)
+  : A class to represent a MetaPhlAn profile
+- [`microEDA()`](https://jrotzetter.github.io/microEDA/reference/microEDA-class.md)
+  [`show(`*`<microEDA>`*`)`](https://jrotzetter.github.io/microEDA/reference/microEDA-class.md)
+  : A S4 class extending phyloseq for microbiome data analysis
+- [`mpa_taxProfile()`](https://jrotzetter.github.io/microEDA/reference/mpa_taxProfile.md)
+  [`` `mpa_taxProfile<-`() ``](https://jrotzetter.github.io/microEDA/reference/mpa_taxProfile.md)
+  : Get or set the MetaPhlAn taxonomic profile
+- [`mpa_version()`](https://jrotzetter.github.io/microEDA/reference/mpa_version.md)
+  [`` `mpa_version<-`() ``](https://jrotzetter.github.io/microEDA/reference/mpa_version.md)
+  : Get or set the MetaPhlAn database version.
+- [`` `otu_table<-`( ``*`<microEDA>`*`,`*`<otu_table>`*`)`](https://jrotzetter.github.io/microEDA/reference/otu_table-set-microEDA-otu_table-method.md)
+  : Replace OTU table in a microEDA object
+- [`` `phy_tree<-`( ``*`<microEDA>`*`,`*`<phylo>`*`)`](https://jrotzetter.github.io/microEDA/reference/phy_tree-set-microEDA-phylo-method.md)
+  : Replace phylogenetic tree in a microEDA object
+- [`plot_taxa_barchart()`](https://jrotzetter.github.io/microEDA/reference/plot_taxa_barchart.md)
+  : Plot Taxonomic Composition of a microEDA/phyloseq Object
+- [`plot_taxa_heatmap()`](https://jrotzetter.github.io/microEDA/reference/plot_taxa_heatmap.md)
+  : Plot heatmap of taxon abundance or prevalence
+- [`plot_taxa_sankey()`](https://jrotzetter.github.io/microEDA/reference/plot_taxa_sankey.md)
+  : Create a Sankey Plot of Taxonomic Abundances
+- [`plot_taxa_upset()`](https://jrotzetter.github.io/microEDA/reference/plot_taxa_upset.md)
+  : Create an UpSet Plot of Shared and Unique Taxa
+- [`` `sample_data<-`() ``](https://jrotzetter.github.io/microEDA/reference/sample_data-set.md)
+  : Replace sample data in a microEDA object
+- [`show_filter_history()`](https://jrotzetter.github.io/microEDA/reference/show_filter_history.md)
+  : Display Filter History for a microEDA Object
+- [`single_metaphlan_profile`](https://jrotzetter.github.io/microEDA/reference/single_metaphlan_profile.md)
+  : SRS014476-Supragingival_plaque data
+- [`summary(`*`<microEDA>`*`)`](https://jrotzetter.github.io/microEDA/reference/summary-microEDA.md)
+  : Summarize a microEDA object
+- [`` `tax_table<-`( ``*`<microEDA>`*`,`*`<taxonomyTable>`*`)`](https://jrotzetter.github.io/microEDA/reference/tax_table-set-microEDA-taxonomyTable-method.md)
+  : Replace taxonomic table in a microEDA object
+- [`to_phyloseq()`](https://jrotzetter.github.io/microEDA/reference/to_phyloseq.md)
+  : Convert an object to a phyloseq object
+- [`trim_taxonomy_prefix()`](https://jrotzetter.github.io/microEDA/reference/trim_taxonomy_prefix.md)
+  : Remove taxonomic prefixes from tax_table columns
+
+# Articles
+
+### All vignettes
+
+- [Introduction to
+  microEDA](https://jrotzetter.github.io/microEDA/articles/microEDA.md):
