@@ -1,6 +1,6 @@
 Package: microEDA
 Title: Exploratory Microbiome Data Analysis and Visualization
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: 
     person(given = "Jérémy",
     family = "Rotzetter",
@@ -11,11 +11,10 @@ Authors@R:
 Description: Collection of functions for microbiome exploratory data analysis to
     answer the simple question of "Who is in my samples?".
 License: GPL (>= 3)
-URL: https://github.com/jrotzetter/microEDA
+URL: https://github.com/jrotzetter/microEDA, https://jrotzetter.github.io/microEDA/
 BugReports: https://github.com/jrotzetter/microEDA/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports: 
     ape (>= 5.8.1),
     ComplexUpset (>= 1.3.6),
@@ -44,3 +43,4 @@ Suggests:
 Config/testthat/edition: 3
 LazyData: true
 VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0
