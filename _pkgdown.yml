@@ -1,0 +1,41 @@
+url: https://jrotzetter.github.io/microEDA/
+template:
+  bootstrap: 5
+  theme: breeze-light
+  # theme-dark: breeze-dark
+  light-switch: true
+  # theme: github-light
+  theme-dark: github-dark
+  bslib:
+    bootswatch: sandstone
+    # Base theme colors (must be paired)
+    # bg: '#FFFFFF'        # Light mode page background (White)
+    # fg: '#3E3F3A'        # Light mode body text (Sandstone Dark Gray)
+
+    # bg-dark: '#222222'   # Dark mode page background (Dark Gray)
+    # fg-dark: '#B8BCC2'   # Dark mode body text (Light Gray)
+
+    # Navbar specific overrides
+    # pkgdown-navbar-bg: '#325D88' # Medium-dark blue  (Sandstone style)
+    pkgdown-navbar-bg: '#216B73'
+    # pkgdown-navbar-bg-dark: '#3E3F3A'
+
+    # Navbar Text Color
+    # Explicitly set text color for light mode navbar
+    navbar-light-color: '#FFFFFF'           # Inactive links
+    # navbar-light-hover-color: '#FFFFFF'   # Hover state
+    navbar-light-active-color: '#FFFFFF'    # Active link
+
+    # Text color for dark mode navbar
+    # navbar-dark-color: '#FFFFFF'
+    # navbar-dark-hover-color: '#FFFFFF'
+    # navbar-dark-active-color: '#FFFFFF'
+
+    # Version Label Color (Currently not working)
+    danger: "#A6081A"
+
+    # Link colors (Body links)
+    # link-color: '#325D88' # Medium-dark blue
+    link-color: '#216B73'
+    link-color-dark: '#CEF4F9'
+    link-decoration: underline dotted
