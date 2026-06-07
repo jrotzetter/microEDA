@@ -22,7 +22,8 @@ Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repost
 
 `microEDA` is an R package for **exploratory data analysis of microbiome
 data**, designed to answer the fundamental question: *“Who is in my
-samples?”*  
+samples?”*
+
 In addition to core visualization tools, the package provides some
 utility functions to detect common data issues.
 
@@ -75,33 +76,40 @@ remotes::install_github("jrotzetter/microEDA", build_vignettes = TRUE)
 `microEDA` provides a collection of plotting functions, built on
 ggplot2, and designed for exploratory data analysis of microbiome data.
 
-### 1. Taxonomic Composition Barplot – `plot_taxa_barchart()`
+### 1. Taxonomic Composition Barplot
 
-- Visualizes abundance of taxa across samples.
-- Supports aggregation at any taxonomic rank (e.g., Phylum, Genus).
-- Enables grouping of samples by metadata variables (e.g., treatment,
+`plot_taxa_barchart()` visualizes abundance of taxa across samples.
+
+- **Aggregates** data at any taxonomic rank (e.g., Phylum, Genus).
+- Optionally **Groups** samples by metadata variables (e.g., treatment,
   disease state).
 
-### 2. Mean Abundance & Prevalence Heatmap – `plot_taxa_heatmap()`
+### 2. Mean Abundance & Prevalence Heatmap
 
-- Each cell displays:
-  - **Mean abundance** of a taxon within a group.
-  - **Prevalence**: proportion of samples in the group where the taxon
-    is detected.
-- This dual metric helps distinguish consistently abundant taxa from
-  those that are sporadically present.
+`plot_taxa_heatmap()` displays a dual-metric view where each cell
+represents:
 
-### 3. Taxonomic Intersection UpSet Plot – `plot_taxa_upset()`
+- **Mean abundance**: Average taxon abundance within a group.
+- **Prevalence**: Proportion of samples in the group where the taxon is
+  detected.
 
-- Visualizes shared and unique taxa across multiple sample groups.
+This dual metric helps distinguish consistently abundant taxa from those
+that are sporadically present.
+
+### 3. Taxonomic Intersection UpSet Plot
+
+`plot_taxa_upset()` visualizes shared and unique taxa across multiple
+sample groups.
+
 - Complemented by `get_taxa_overlaps()` for programmatic access to
   intersection data.
 
-### 4. Taxonomic Flow Sankey Plot – `plot_taxa_sankey()`
+### 4. Taxonomic Flow Sankey Plot
 
-- Illustrates hierarchical taxonomic relationships from higher (e.g.,
-  Phylum) to lower (e.g., Species) taxonomic ranks.
-- Can display abundance flow for a **single sample** or **mean
+`plot_taxa_sankey()` illustrates hierarchical taxonomic relationships
+from higher (e.g., Phylum) to lower (e.g., Species) taxonomic ranks.
+
+- Supports display of abundance flow for a **single sample** or **mean
   abundance** across a group of samples.
 
 ## Example Usage

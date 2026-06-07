@@ -68,5 +68,5 @@ head(phyloseq::tax_table(GlobalPatterns)[, c("Kingdom", "Phylum", "Order")])
 \seealso{
 \code{\link[=trim_taxonomy_prefix]{trim_taxonomy_prefix()}} to remove prefixes.
 
-\code{\link[phyloseq:tax_table-methods]{phyloseq::tax_table()}} to access taxonomy data.
+\code{\link[phyloseq:tax_table]{tax_table()}} to access taxonomy data.
 }

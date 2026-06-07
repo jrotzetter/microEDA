@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
   comment = "#>",
   fig.width = 7, # Global width
   fig.height = 5, # Global height
-  fig.align = "center" # Optional: centers plots
+  fig.align = "center" # Centers plots
 )
 ```
 
