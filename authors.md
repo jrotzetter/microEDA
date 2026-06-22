@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/jrotzetter/microEDA/blob/v1.0.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/jrotzetter/microEDA/blob/main/DESCRIPTION)
 
 Rotzetter J (2026). *microEDA: Exploratory Microbiome Data Analysis and
 Visualization*. R package version 1.0.0,
