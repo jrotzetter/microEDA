@@ -12,8 +12,6 @@ Release](https://img.shields.io/github/release/jrotzetter/microEDA?include_prere
 microEDA](https://img.shields.io/github/issues/jrotzetter/microEDA)](https://github.com/jrotzetter/microEDA/issues "View open issues")
 [![Made with
 R](https://img.shields.io/badge/R-4.5.3-blue?logo=r&logoColor=white)](https://cran.r-project.org/ "Go to CRAN homepage")
-[![Made with
-R](https://img.shields.io/badge/RStudio-2026.01.1_Build_403-blue?logo=rstudio&logoColor=white)](https://posit.co/products/open-source/rstudio/ "Go to RSTUDIO IDE homepage")
 [![Project Status:
 Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 <!-- badges: end -->
@@ -30,17 +28,45 @@ utility functions to detect common data issues.
 ## Installation
 
 The development version of microEDA can be installed from
-[GitHub](https://github.com/jrotzetter/microEDA) with:
+[GitHub](https://github.com/jrotzetter/microEDA).
+
+**Tip:** The [Introduction to
+microEDA](https://jrotzetter.github.io/microEDA/articles/microEDA.html)
+vignette is available online and can be viewed without installing the
+package.
+
+### Option 1: Using `pak` (Recommended)
+
+This method is fastest and handles Bioconductor dependencies (like
+`phyloseq`) automatically. Note that **vignettes are not included** with
+this method.
 
 ``` r
-# install.packages("pak")
+if (!requireNamespace("pak", quietly = TRUE)) {
+  install.packages("pak")
+}
 pak::pak("jrotzetter/microEDA")
 ```
 
-Or the `remotes` package:
+### Option 2: Using `remotes` (Include Vignettes)
+
+Select this method to include package vignettes for offline viewing.
+
+***Important***: *Because `microEDA` depends on `phyloseq` (hosted on
+Bioconductor), please install `phyloseq` first to avoid dependency
+errors when using `remotes`.*
 
 ``` r
-# install.packages("remotes")
+# 1. Install Bioconductor dependency
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+BiocManager::install("phyloseq")
+
+# 2. Install microEDA with vignettes
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
 remotes::install_github("jrotzetter/microEDA", build_vignettes = TRUE)
 ```
 
