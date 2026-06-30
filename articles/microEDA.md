@@ -179,7 +179,7 @@ summary(filtered_me)
 #>                      Abundance criterion :  prevalence
 #>                      Group requirement   :         N/A
 #>                      Filtered kept       :        TRUE
-#>                      Taxa removed        :       17734
+#>                      Features removed    :       17734
 #>                      Total removed       :       17734
 ```
 

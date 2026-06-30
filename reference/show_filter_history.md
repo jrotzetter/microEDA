@@ -2,7 +2,7 @@
 
 Prints a formatted summary of all filter steps applied to a
 [microEDA](https://jrotzetter.github.io/microEDA/reference/microEDA-class.md)
-object, showing parameters used and taxa removed at each step. The
+object, showing parameters used and features removed at each step. The
 output adapts to the terminal width, displaying either a horizontal
 table (for few steps) or a vertical list (for many steps or narrow
 terminals).
@@ -50,7 +50,7 @@ horizontal table is rendered.
   Includes a "Total removed" row with cumulative sums.
 
 - **Vertical:** Shows one step at a time with all parameters listed.
-  Includes "Total taxa removed" up to that step.
+  Includes "Total features removed" up to that step.
 
 ## Examples
 
@@ -71,6 +71,6 @@ show_filter_history(me_filtered)
 #>                      Abundance criterion :  prevalence
 #>                      Group requirement   :         N/A
 #>                      Filtered kept       :        TRUE
-#>                      Taxa removed        :       19211
+#>                      Features removed    :       19211
 #>                      Total removed       :       19211
 ```
