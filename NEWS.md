@@ -1,3 +1,9 @@
+# microEDA 1.0.1
+
+## Improvements
+
+* `show_filter_history()` and `filter_features()` now use the term "features" instead of "taxa". This change more accurately reflects that rows may represent ASVs or OTUs that lack formal taxonomic classification.
+
 # microEDA 1.0.0
 
 * First official stable release on GitHub.

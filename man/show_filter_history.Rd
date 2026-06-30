@@ -22,7 +22,7 @@ side effect of printing to the console.
 }
 \description{
 Prints a formatted summary of all filter steps applied to a
-\linkS4class{microEDA} object, showing parameters used and taxa removed at
+\linkS4class{microEDA} object, showing parameters used and features removed at
 each step. The output adapts to the terminal width, displaying either a
 horizontal table (for few steps) or a vertical list (for many steps or
 narrow terminals).
@@ -45,7 +45,7 @@ compact horizontal table is rendered.
 parameters as rows. Includes a "Total removed" row with
 cumulative sums.
 \item \strong{Vertical:} Shows one step at a time with all
-parameters listed. Includes "Total taxa removed" up to that step.
+parameters listed. Includes "Total features removed" up to that step.
 }
 }
 

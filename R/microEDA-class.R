@@ -376,7 +376,7 @@ setMethod("filter_history<-", "microEDA", function(object, value) {
 #' Display Filter History for a microEDA Object
 #'
 #' Prints a formatted summary of all filter steps applied to a
-#' \linkS4class{microEDA} object, showing parameters used and taxa removed at
+#' \linkS4class{microEDA} object, showing parameters used and features removed at
 #' each step. The output adapts to the terminal width, displaying either a
 #' horizontal table (for few steps) or a vertical list (for many steps or
 #' narrow terminals).
@@ -406,7 +406,7 @@ setMethod("filter_history<-", "microEDA", function(object, value) {
 #'     parameters as rows. Includes a "Total removed" row with
 #'     cumulative sums.
 #'   \item \strong{Vertical:} Shows one step at a time with all
-#'     parameters listed. Includes "Total taxa removed" up to that step.
+#'     parameters listed. Includes "Total features removed" up to that step.
 #' }
 #'
 #' @examples
@@ -468,7 +468,7 @@ setMethod(
 
     labels <- c(
       "Minimum abundance", "Minimum prevalence", "Filtered by group",
-      "Abundance criterion", "Group requirement", "Filtered kept", "Taxa removed"
+      "Abundance criterion", "Group requirement", "Filtered kept", "Features removed"
     )
 
     # Prepare the data rows corresponding to the labels above
@@ -542,10 +542,10 @@ setMethod(
         cat(sprintf("     Group requirement:    %s\n", if (g_req == "") "N/A" else g_req))
 
         cat(sprintf("     Filtered kept:        %s\n", val$keep_filtered[i]))
-        cat(sprintf("     Taxa removed:         %s\n", val$n_removed[i]))
+        cat(sprintf("     Features removed:         %s\n", val$n_removed[i]))
 
         # Show cumulative removal count up to this step
-        cat(sprintf("     Total taxa removed:   %s\n\n", sum(val$n_removed[1:i])))
+        cat(sprintf("     Total features removed:   %s\n\n", sum(val$n_removed[1:i])))
       }
     } else {
       # --- Horizontal Table Layout ---

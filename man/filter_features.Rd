@@ -52,7 +52,7 @@ of the removed features are stored in the \code{filtered_taxa()} slot of \code{m
 objects.
 }
 \description{
-Filters taxa (features) from a \code{microEDA} or \code{phyloseq} object based on minimum abundance
+Filters features (taxa) from a \code{microEDA} or \code{phyloseq} object based on minimum abundance
 and prevalence thresholds. Filtering can be applied globally or within groups
 defined by a metadata variable. Optionally keeps filtered-out features in the
 info slot of \code{microEDA} objects.
