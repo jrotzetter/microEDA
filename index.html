@@ -64,7 +64,7 @@
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
 <p><code>microEDA</code> is an R package for <strong>exploratory data analysis of microbiome data</strong>, designed to answer the fundamental question: <em>“Who is in my samples?”</em></p>
-<p>In addition to core visualization tools, the package provides some utility functions to detect common data issues.</p>
+<p>In addition to core visualization functions, the package provides some utility functions to detect common data issues.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -125,14 +125,13 @@
 <li>
 <strong>Taxa overlap analysis</strong>: <code><a href="reference/get_taxa_overlaps.html">get_taxa_overlaps()</a></code> computes overlaps and unique sets of taxa across sample groups, serving as an alternative to UpSet plots.</li>
 </ul>
-</div>
-<div class="section level2">
-<h2 id="visualization-functions">Visualization Functions<a class="anchor" aria-label="anchor" href="#visualization-functions"></a>
-</h2>
-<p><code>microEDA</code> provides a collection of plotting functions, built on ggplot2, and designed for exploratory data analysis of microbiome data.</p>
 <div class="section level3">
-<h3 id="id_1-taxonomic-composition-barplot">1. Taxonomic Composition Barplot<a class="anchor" aria-label="anchor" href="#id_1-taxonomic-composition-barplot"></a>
+<h3 id="visualization-functions">Visualization Functions<a class="anchor" aria-label="anchor" href="#visualization-functions"></a>
 </h3>
+<p><code>microEDA</code> provides a collection of plotting functions, built on ggplot2, and designed for exploratory data analysis of microbiome data.</p>
+<div class="section level4">
+<h4 id="id_1-taxonomic-composition-barplot">1. Taxonomic Composition Barplot<a class="anchor" aria-label="anchor" href="#id_1-taxonomic-composition-barplot"></a>
+</h4>
 <p><code><a href="reference/plot_taxa_barchart.html">plot_taxa_barchart()</a></code> visualizes abundance of taxa across samples.</p>
 <ul>
 <li>
@@ -140,9 +139,9 @@
 <li>Optionally <strong>Groups</strong> samples by metadata variables (e.g., treatment, disease state).</li>
 </ul>
 </div>
-<div class="section level3">
-<h3 id="id_2-mean-abundance--prevalence-heatmap">2. Mean Abundance &amp; Prevalence Heatmap<a class="anchor" aria-label="anchor" href="#id_2-mean-abundance--prevalence-heatmap"></a>
-</h3>
+<div class="section level4">
+<h4 id="id_2-mean-abundance--prevalence-heatmap">2. Mean Abundance &amp; Prevalence Heatmap<a class="anchor" aria-label="anchor" href="#id_2-mean-abundance--prevalence-heatmap"></a>
+</h4>
 <p><code><a href="reference/plot_taxa_heatmap.html">plot_taxa_heatmap()</a></code> displays a dual-metric view where each cell represents:</p>
 <ul>
 <li>
@@ -152,21 +151,22 @@
 </ul>
 <p>This dual metric helps distinguish consistently abundant taxa from those that are sporadically present.</p>
 </div>
-<div class="section level3">
-<h3 id="id_3-taxonomic-intersection-upset-plot">3. Taxonomic Intersection UpSet Plot<a class="anchor" aria-label="anchor" href="#id_3-taxonomic-intersection-upset-plot"></a>
-</h3>
+<div class="section level4">
+<h4 id="id_3-taxonomic-intersection-upset-plot">3. Taxonomic Intersection UpSet Plot<a class="anchor" aria-label="anchor" href="#id_3-taxonomic-intersection-upset-plot"></a>
+</h4>
 <p><code><a href="reference/plot_taxa_upset.html">plot_taxa_upset()</a></code> visualizes shared and unique taxa across multiple sample groups.</p>
 <ul>
 <li>Complemented by <code><a href="reference/get_taxa_overlaps.html">get_taxa_overlaps()</a></code> for programmatic access to intersection data.</li>
 </ul>
 </div>
-<div class="section level3">
-<h3 id="id_4-taxonomic-flow-sankey-plot">4. Taxonomic Flow Sankey Plot<a class="anchor" aria-label="anchor" href="#id_4-taxonomic-flow-sankey-plot"></a>
-</h3>
+<div class="section level4">
+<h4 id="id_4-taxonomic-flow-sankey-plot">4. Taxonomic Flow Sankey Plot<a class="anchor" aria-label="anchor" href="#id_4-taxonomic-flow-sankey-plot"></a>
+</h4>
 <p><code><a href="reference/plot_taxa_sankey.html">plot_taxa_sankey()</a></code> illustrates hierarchical taxonomic relationships from higher (e.g., Phylum) to lower (e.g., Species) taxonomic ranks.</p>
 <ul>
 <li>Supports display of abundance flow for a <strong>single sample</strong> or <strong>mean abundance</strong> across a group of samples.</li>
 </ul>
+</div>
 </div>
 </div>
 <div class="section level2">
@@ -193,6 +193,25 @@
 <ul>
 <li>Custom color palette to increase available distinct colors is planned</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h2>
+<p><code>microEDA</code> is a free, open-source project licensed under GPLv3. If you find these functions useful for your publications, presentations, or commercial workflows, please consider citing the package. This helps track the project’s impact and ensures proper credit for the development of these exploratory data analysis utilities.</p>
+<p><strong>BibTeX:</strong></p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bibtex"><code class="sourceCode bibtex"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="va">@Manual</span>{<span class="ot">microEDA</span>,</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="dt">title</span> = {{microEDA}: Exploratory Microbiome Data Analysis and Visualization},</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="dt">author</span> = {Jérémy Rotzetter},</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="dt">year</span> = {2026},</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="dt">note</span> = {R package version 1.0.1},</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="dt">url</span> = {https://github.com/jrotzetter/microEDA},</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>}<span class="co">   </span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="acknowledgments">Acknowledgments<a class="anchor" aria-label="anchor" href="#acknowledgments"></a>
+</h2>
+<p><code>microEDA</code> is built on top of the <a href="https://github.com/joey711/phyloseq" class="external-link">phyloseq</a> infrastructure and leverages the visualization capabilities of <a href="https://ggplot2.tidyverse.org/" class="external-link">ggplot2</a>, <a href="https://github.com/krassowski/complex-upset" class="external-link">ComplexUpset</a>, and <a href="https://github.com/pepijn-devries/ggsankeyfier/" class="external-link">ggsankeyfier</a>. Development of this package was made possible by the foundational work of the authors and maintainers of these packages.</p>
+<p><em>Note: If you use <code>microEDA</code> in your research, please also consider citing the underlying packages you utilize, particularly phyloseq.</em></p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
