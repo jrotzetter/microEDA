@@ -22,7 +22,7 @@ Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repost
 data**, designed to answer the fundamental question: *“Who is in my
 samples?”*
 
-In addition to core visualization tools, the package provides some
+In addition to core visualization functions, the package provides some
 utility functions to detect common data issues.
 
 ## Installation
@@ -97,12 +97,12 @@ remotes::install_github("jrotzetter/microEDA", build_vignettes = TRUE)
   unique sets of taxa across sample groups, serving as an alternative to
   UpSet plots.
 
-## Visualization Functions
+### Visualization Functions
 
 `microEDA` provides a collection of plotting functions, built on
 ggplot2, and designed for exploratory data analysis of microbiome data.
 
-### 1. Taxonomic Composition Barplot
+#### 1. Taxonomic Composition Barplot
 
 `plot_taxa_barchart()` visualizes abundance of taxa across samples.
 
@@ -110,7 +110,7 @@ ggplot2, and designed for exploratory data analysis of microbiome data.
 - Optionally **Groups** samples by metadata variables (e.g., treatment,
   disease state).
 
-### 2. Mean Abundance & Prevalence Heatmap
+#### 2. Mean Abundance & Prevalence Heatmap
 
 `plot_taxa_heatmap()` displays a dual-metric view where each cell
 represents:
@@ -122,7 +122,7 @@ represents:
 This dual metric helps distinguish consistently abundant taxa from those
 that are sporadically present.
 
-### 3. Taxonomic Intersection UpSet Plot
+#### 3. Taxonomic Intersection UpSet Plot
 
 `plot_taxa_upset()` visualizes shared and unique taxa across multiple
 sample groups.
@@ -130,7 +130,7 @@ sample groups.
 - Complemented by `get_taxa_overlaps()` for programmatic access to
   intersection data.
 
-### 4. Taxonomic Flow Sankey Plot
+#### 4. Taxonomic Flow Sankey Plot
 
 `plot_taxa_sankey()` illustrates hierarchical taxonomic relationships
 from higher (e.g., Phylum) to lower (e.g., Species) taxonomic ranks.
@@ -170,3 +170,37 @@ the documentation. Both are also available online at
 ## Planned features
 
 - Custom color palette to increase available distinct colors is planned
+
+## Citation
+
+`microEDA` is a free, open-source project licensed under GPLv3. If you
+find these functions useful for your publications, presentations, or
+commercial workflows, please consider citing the package. This helps
+track the project’s impact and ensures proper credit for the development
+of these exploratory data analysis utilities.
+
+**BibTeX:**
+
+``` bibtex
+@Manual{microEDA,
+  title = {{microEDA}: Exploratory Microbiome Data Analysis and Visualization},
+  author = {Jérémy Rotzetter},
+  year = {2026},
+  note = {R package version 1.0.1},
+  url = {https://github.com/jrotzetter/microEDA},
+}   
+```
+
+## Acknowledgments
+
+`microEDA` is built on top of the
+[phyloseq](https://github.com/joey711/phyloseq) infrastructure and
+leverages the visualization capabilities of
+[ggplot2](https://ggplot2.tidyverse.org/),
+[ComplexUpset](https://github.com/krassowski/complex-upset), and
+[ggsankeyfier](https://github.com/pepijn-devries/ggsankeyfier/).
+Development of this package was made possible by the foundational work
+of the authors and maintainers of these packages.
+
+*Note: If you use `microEDA` in your research, please also consider
+citing the underlying packages you utilize, particularly phyloseq.*
