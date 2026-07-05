@@ -1,6 +1,7 @@
 Package: microEDA
 Title: Exploratory Microbiome Data Analysis and Visualization
 Version: 1.0.1
+Date: 2026-06-30
 Authors@R: 
     person(given = "Jérémy",
     family = "Rotzetter",
