@@ -167,9 +167,17 @@ For more details please see `vignette("microEDA")` or the help pages in
 the documentation. Both are also available online at
 <https://jrotzetter.github.io/microEDA/>.
 
-## Planned features
+## Future Directions
 
-- Custom color palette to increase available distinct colors is planned
+Potential areas for future development include:
+
+- **Improved Color Scalability:** Exploring custom color palettes to
+  better distinguish many groups.
+- **Quality Control Extensions:** Investigating functions for data
+  quality control, such as:
+  - Contaminant removal and sequencing depth analysis.
+  - Relative-abundance-aware metrics (e.g., zero-inflation rates).
+  - Integration of outlier detection and rarefaction curves.
 
 ## Citation
 
