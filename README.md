@@ -7,11 +7,11 @@
 
 [![GitHub
 Release](https://img.shields.io/github/release/jrotzetter/microEDA?include_prereleases=&sort=semver&color=blue)](https://github.com/jrotzetter/microEDA/releases/ "View releases")
-[![License](https://img.shields.io/badge/License-GPLv3-blue)](#license "View license summary")
+[![License](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE.md)
 [![Issues -
 microEDA](https://img.shields.io/github/issues/jrotzetter/microEDA)](https://github.com/jrotzetter/microEDA/issues "View open issues")
-[![Made with
-R](https://img.shields.io/badge/R-4.5.3-blue?logo=r&logoColor=white)](https://cran.r-project.org/ "Go to CRAN homepage")
+[![R
+Version](https://img.shields.io/badge/R-%3E%3D4.1.0-blue?logo=R&logoColor=white)](https://cran.r-project.org/ "Go to CRAN homepage")
 [![Project Status:
 Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 <!-- badges: end -->
