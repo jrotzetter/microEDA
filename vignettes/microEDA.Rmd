@@ -147,3 +147,9 @@ overlaps[["Soil-specific"]]
 # View taxa shared by all groups
 overlaps[["all-intersection"]]
 ```
+
+# Session Information
+
+```{r}
+sessionInfo()
+```   
